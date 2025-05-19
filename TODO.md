@@ -54,8 +54,8 @@ Create a CLI tool that captures website screenshots using @alexberriman/screensh
 
 ## Phase 4: Screenshot Service
 
-- [ ] Create wrapper service around @alexberriman/screenshotter (you can see readme for this repo: https://github.com/alexberriman/screenshotter)
-- [ ] Create interface for screenshot options:
+- [x] Create wrapper service around @alexberriman/screenshotter (you can see readme for this repo: https://github.com/alexberriman/screenshotter)
+- [x] Create interface for screenshot options:
   ```typescript
   interface ScreenshotOptions {
     url: string;
@@ -67,11 +67,11 @@ Create a CLI tool that captures website screenshots using @alexberriman/screensh
     quality?: number;
   }
   ```
-- [ ] Implement screenshot capture with error handling
-- [ ] Return Result<ScreenshotResult, ScreenshotError>
-- [ ] Validate URL format before processing
-- [ ] Handle temporary file creation if no output path specified (store screenshot files in /tmp)
-- [ ] Add screenshot metadata (viewport size, timestamp)
+- [x] Implement screenshot capture with error handling
+- [x] Return Result<ScreenshotResult, ScreenshotError>
+- [x] Validate URL format before processing
+- [x] Handle temporary file creation if no output path specified (store screenshot files in /tmp)
+- [x] Add screenshot metadata (viewport size, timestamp)
 
 ## Phase 5: OpenAI Vision API to analyze screenshot
 
