@@ -1,206 +1,298 @@
 # Design Feedback CLI
 
-A command-line tool that captures screenshots of websites and provides expert web design/UX feedback using OpenAI's vision API. It focuses on identifying critical issues and fundamental problems rather than minor UI improvements.
+A powerful CLI tool that captures screenshots of websites and provides professional web design/UX feedback using AI vision analysis. Perfect for quickly identifying critical design issues, errors, and UX problems in web applications.
 
 ## Features
 
-- 📸 **Automated Screenshots**: Captures high-quality screenshots using [@alexberriman/screenshotter](https://github.com/alexberriman/screenshotter)
-- 🤖 **AI-Powered Analysis**: Uses OpenAI's gpt-image-1 model to analyze design issues
-- 📱 **Device-Aware**: Supports mobile, tablet, and desktop viewports
-- 🎯 **Focused Feedback**: Identifies critical design errors and UX problems
-- 📊 **Multiple Output Formats**: Supports both human-readable text and structured JSON
-- ⚙️ **Flexible Configuration**: Environment variables, config files, and CLI arguments
+- 🖼️ Automated website screenshot capture using [@alexberriman/screenshotter](https://github.com/alexberriman/screenshotter)
+- 🤖 AI-powered design analysis using OpenAI's GPT vision models
+- 📱 Support for multiple viewport sizes (mobile, tablet, desktop, custom)
+- 🎨 Actionable feedback focused on critical issues and errors
+- 📊 Multiple output formats (text and JSON)
+- ⚡ Fast and efficient with TypeScript/Bun runtime
+- 🔑 Secure API key management
 
 ## Installation
 
+### Using npm
+
 ```bash
-npm install -g @your-scope/design-feedback
+npm install -g design-feedback
 ```
 
-Or use directly with npx:
+### Using Bun
 
 ```bash
-npx @your-scope/design-feedback https://example.com
+bun install -g design-feedback
 ```
 
-## Quick Start
+### From Source
 
 ```bash
-# Basic usage
-design-feedback https://example.com
+# Clone the repository
+git clone https://github.com/alexberriman/design-feedback.git
+cd design-feedback
 
-# Mobile viewport with JSON output
-design-feedback https://example.com -v mobile -f json
+# Install dependencies
+bun install
 
-# Custom output path with wait time
-design-feedback https://example.com -o ./screenshots/analysis.png -w 3
-
-# Wait for specific element
-design-feedback https://example.com --wait-for "#main-content"
+# Build and link globally
+bun run build
+bun link
 ```
 
 ## Configuration
 
 ### API Key Setup
 
-The tool requires an OpenAI API key. You can provide it in three ways:
+The tool requires an OpenAI API key to analyze screenshots. Set it up in one of three ways:
 
-1. **Environment Variable** (recommended):
+1. **Environment Variable** (Recommended)
    ```bash
-   export OPENAI_API_KEY=your-api-key
+   export OPENAI_API_KEY="your-api-key-here"
    ```
 
-2. **Config File** (`~/.design-feedback/config.json`):
+2. **Config File**
+   Create `~/.design-feedback/config.json`:
    ```json
    {
-     "openaiApiKey": "your-api-key"
+     "apiKey": "your-api-key-here"
    }
    ```
 
-3. **Command Line**:
+3. **Command Line Option**
    ```bash
-   design-feedback https://example.com --api-key your-api-key
+   design-feedback https://example.com --api-key "your-api-key-here"
    ```
 
-## Command Line Options
+If no API key is configured, the tool will prompt you to enter one interactively.
 
-```
-design-feedback <url> [options]
+## Usage
 
-Options:
-  -v, --viewport <size>     Device viewport (mobile, tablet, desktop, WIDTHxHEIGHT)
-                           Default: desktop (1920x1080)
-  -o, --output <path>       Screenshot output path
-                           Default: ./screenshot-{timestamp}.png
-  -f, --format <format>     Output format (json, text)
-                           Default: text
-  -w, --wait <seconds>      Wait time before screenshot
-                           Default: 0
-  --wait-for <selector>     Wait for specific element selector
-  --no-full-page           Capture viewport only (not full page)
-  --quality <number>        JPEG quality (0-100)
-                           Default: 80
-  --api-key <key>          Override default OpenAI API key
-  --verbose               Enable debug logging
-  -h, --help              Display help
-  -V, --version           Show version
-```
-
-## Examples
-
-### Basic Analysis
+### Basic Usage
 
 ```bash
 design-feedback https://example.com
 ```
 
-Output:
-```
-🔍 Analyzing https://example.com (desktop viewport)
-📸 Taking screenshot...
-🤖 Analyzing design...
-
-Design Feedback Report
-====================
-
-Critical Issues:
-- Navigation menu items overlap on smaller desktop screens
-- Form validation errors are not visually distinct
-- Call-to-action buttons lack sufficient contrast
-
-Accessibility Concerns:
-- Missing alt text on hero images
-- Insufficient color contrast on footer links
-```
-
-### Mobile Analysis with JSON Output
+### Command Options
 
 ```bash
-design-feedback https://example.com -v mobile -f json
+design-feedback [options] <url>
+
+Options:
+  -v, --viewport <size>       Viewport size (mobile/tablet/desktop/WIDTHxHEIGHT) (default: "desktop")
+  -o, --output <path>         Save screenshot to specified path
+  -f, --format <format>       Output format (json/text) (default: "text")
+  -w, --wait <seconds>        Wait time before screenshot (seconds)
+  --wait-for <selector>       Wait for specific CSS selector
+  --no-full-page              Capture viewport only, not full page
+  --quality <number>          JPEG quality (0-100) (default: 90)
+  --api-key <key>             Override default OpenAI API key
+  --verbose                   Enable debug logging
+  -h, --help                  Display help for command
 ```
 
-Output:
-```json
-{
-  "url": "https://example.com",
-  "viewport": "mobile",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "analysis": {
-    "criticalIssues": [
-      {
-        "category": "layout",
-        "severity": "high",
-        "description": "Navigation menu not accessible on mobile"
-      }
-    ],
-    "accessibilityIssues": [],
-    "performanceIssues": []
-  }
-}
-```
+### Usage Examples
 
-### Custom Screenshot with Wait
-
+#### Basic Website Analysis
 ```bash
-design-feedback https://example.com \
-  -o ./reports/homepage.png \
-  -w 2 \
-  --wait-for "#content-loaded"
+design-feedback https://example.com
+```
+
+#### Mobile Viewport Analysis
+```bash
+design-feedback https://example.com --viewport mobile
+```
+
+#### Custom Viewport Size
+```bash
+design-feedback https://example.com --viewport 1024x768
+```
+
+#### Save Screenshot with JSON Output
+```bash
+design-feedback https://example.com --output screenshot.png --format json
+```
+
+#### Wait for Dynamic Content
+```bash
+design-feedback https://spa-app.com --wait-for ".content-loaded" --wait 3
+```
+
+#### Save Analysis to File
+```bash
+design-feedback https://example.com --format json > analysis.json
 ```
 
 ## Output Formats
 
 ### Text Format (Default)
 
-Human-readable output with:
-- Color-coded severity levels
-- Clear section headers
-- Bullet-pointed issues
-- Actionable feedback
+The text format provides a human-readable analysis with color-coded output:
+
+```
+🔍 Design Feedback for https://example.com
+
+📱 Viewport: desktop (1920x1080)
+🕐 Analyzed at: 2024-01-15 10:30:00
+
+Critical Issues:
+• Navigation menu overlaps content on mobile devices
+• Button text is not readable due to poor contrast ratio
+• Form validation errors are not properly displayed
+• Hero image takes too long to load (5.2s)
+
+Accessibility Concerns:
+• Missing alt text on several images
+• Form inputs lack proper labels
+• Color contrast fails WCAG AA standards
+
+Performance Issues:
+• Large unoptimized images (3.5MB total)
+• No lazy loading implemented
+• Missing viewport meta tag
+```
 
 ### JSON Format
 
-Structured data including:
-- URL and viewport metadata
-- Categorized issues (critical, accessibility, performance)
-- Severity levels
-- Timestamps
-- Detailed descriptions
+The JSON format provides structured data for programmatic use:
 
-## How It Works
+```json
+{
+  "url": "https://example.com",
+  "viewport": {
+    "type": "desktop",
+    "width": 1920,
+    "height": 1080
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "analysis": {
+    "criticalIssues": [
+      {
+        "severity": "high",
+        "category": "layout",
+        "description": "Navigation menu overlaps content on mobile devices",
+        "recommendation": "Implement responsive navigation pattern"
+      }
+    ],
+    "accessibility": [
+      {
+        "severity": "medium",
+        "issue": "Missing alt text",
+        "elements": ["hero-image", "product-gallery"]
+      }
+    ],
+    "performance": [
+      {
+        "metric": "image-load-time",
+        "value": "5.2s",
+        "recommendation": "Optimize images and implement lazy loading"
+      }
+    ]
+  }
+}
+```
 
-1. **Screenshot Capture**: Uses [@alexberriman/screenshotter](https://github.com/alexberriman/screenshotter) to capture the webpage
-2. **Image Processing**: Converts screenshot to base64 format
-3. **AI Analysis**: Sends image to OpenAI's gpt-image-1 model with expert prompt
-4. **Result Formatting**: Parses and formats the analysis based on output preference
-5. **Output**: Displays results in console or saves to file
+## Examples
 
-## Requirements
+### Analyze a Production Website
+```bash
+design-feedback https://mycompany.com --viewport mobile --format json > mobile-audit.json
+```
 
-- Node.js 18+ or Bun runtime
-- OpenAI API key with access to vision models
-- Internet connection for API calls
+### Check Responsive Design
+```bash
+# Check mobile view
+design-feedback https://mysite.com --viewport mobile --output mobile.png
+
+# Check tablet view
+design-feedback https://mysite.com --viewport tablet --output tablet.png
+
+# Check desktop view
+design-feedback https://mysite.com --viewport desktop --output desktop.png
+```
+
+### SPA with Dynamic Content
+```bash
+design-feedback https://spa-app.com \
+  --wait-for "[data-loaded='true']" \
+  --wait 5 \
+  --no-full-page
+```
+
+### CI/CD Integration
+```bash
+# In your CI pipeline
+design-feedback $PREVIEW_URL --format json > design-review.json
+
+# Check for critical issues
+if grep -q '"severity": "critical"' design-review.json; then
+  echo "Critical design issues found!"
+  exit 1
+fi
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"API key not found" error**
+   - Ensure your API key is properly configured
+   - Check environment variables with `echo $OPENAI_API_KEY`
+   - Verify config file exists at `~/.design-feedback/config.json`
+
+2. **"Screenshot failed" error**
+   - Verify the URL is accessible
+   - Check your internet connection
+   - Try increasing wait time with `--wait` option
+
+3. **"Analysis timeout" error**
+   - OpenAI API might be slow; try again
+   - Check your API key has sufficient credits
+   - Use `--verbose` for detailed error logs
+
+### Debug Mode
+
+Enable verbose logging for troubleshooting:
+
+```bash
+design-feedback https://example.com --verbose
+```
+
+This will show:
+- Screenshot capture progress
+- API request details
+- Error stack traces
+- Performance timing
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to our repository.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+```bash
+# Development setup
+git clone https://github.com/alexberriman/design-feedback.git
+cd design-feedback
+bun install
+bun test
+```
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT © [Alex Berriman](https://github.com/alexberriman)
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/design-feedback/issues)
-- **Documentation**: [Full Documentation](https://github.com/your-org/design-feedback/wiki)
-- **Community**: [Discussions](https://github.com/your-org/design-feedback/discussions)
+- 📧 Email: alex@berriman.dev
+- 🐛 Issues: [GitHub Issues](https://github.com/alexberriman/design-feedback/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/alexberriman/design-feedback/discussions)
 
 ## Acknowledgments
 
-- Built with [@alexberriman/screenshotter](https://github.com/alexberriman/screenshotter)
-- Powered by OpenAI's Vision API
-- Inspired by the need for automated design QA
-
----
-
-Made with ❤️ for better web experiences
+Built with:
+- [Bun](https://bun.sh/) - Fast JavaScript runtime
+- [@alexberriman/screenshotter](https://github.com/alexberriman/screenshotter) - Screenshot capture
+- [OpenAI](https://openai.com/) - AI vision analysis
+- [Commander.js](https://github.com/tj/commander.js/) - CLI framework
+- [ts-results](https://github.com/vultix/ts-results) - Functional error handling
