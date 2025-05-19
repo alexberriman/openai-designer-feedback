@@ -28,12 +28,12 @@ Create a CLI tool that captures website screenshots using @alexberriman/screensh
 
 ## Phase 2: Configuration Management
 
-- [ ] Create configuration loader for OpenAI API key
-  - [ ] Support environment variables (`OPENAI_API_KEY`)
-  - [ ] Support config file (~/.design-feedback/config.json)
-  - [ ] Interactive prompt if no API key found
-- [ ] Validate configuration on startup
-- [ ] Create config types and interfaces
+- [x] Create configuration loader for OpenAI API key
+  - [x] Support environment variables (`OPENAI_API_KEY`)
+  - [x] Support config file (~/.design-feedback/config.json)
+  - [x] Interactive prompt if no API key found
+- [x] Validate configuration on startup
+- [x] Create config types and interfaces
 
 ## Phase 3: CLI Interface
 
