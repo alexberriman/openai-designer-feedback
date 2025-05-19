@@ -110,19 +110,19 @@ OpenAI Vision:
 - [ ] Add timeout handling
 - [ ] Return Result<AnalysisResult, AnalysisError>
 
-## Phase 7: Output Formatting
+## Phase 7: Output Formatting ✅
 
-- [ ] Create output formatter interface
-- [ ] Implement text output formatter:
-  - [ ] Color-coded severity levels
-  - [ ] Clear section headers
-  - [ ] Bullet-pointed issues
-  - [ ] Readable console output
-- [ ] Implement JSON output formatter:
-  - [ ] Structured data format
-  - [ ] Include metadata (timestamp, URL, viewport)
-  - [ ] Categorized issues
-- [ ] Add option to save output to file
+- [x] Create output formatter interface
+- [x] Implement text output formatter:
+  - [x] Color-coded severity levels
+  - [x] Clear section headers
+  - [x] Bullet-pointed issues
+  - [x] Readable console output
+- [x] Implement JSON output formatter:
+  - [x] Structured data format
+  - [x] Include metadata (timestamp, URL, viewport)
+  - [x] Categorized issues
+- [x] Add option to save output to file
 
 ## Phase 8: Error Handling & Logging
 
