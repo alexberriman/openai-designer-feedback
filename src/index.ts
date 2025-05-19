@@ -13,6 +13,8 @@ import {
 import { createLogger } from "./utils/logger.js";
 import { ensureApiKey } from "./utils/config-loader.js";
 import { Result, Ok, Err } from "ts-results";
+import { ScreenshotService } from "./services/screenshot-service.js";
+import type { ScreenshotOptions } from "./types/screenshot.js";
 
 const program = new Command();
 
@@ -51,11 +53,34 @@ program
         process.exit(1);
       }
 
-      // Implementation for screenshot and analysis services will be added in Phase 4 and 5
+      // Take screenshot
+      logger.info("Taking screenshot...");
+      const screenshotService = new ScreenshotService();
+      const screenshotOptions: ScreenshotOptions = {
+        url: validatedOptions.url,
+        viewport: validatedOptions.viewport,
+        outputPath: validatedOptions.output,
+        waitTime: validatedOptions.wait,
+        waitFor: validatedOptions.waitFor,
+        fullPage: validatedOptions.fullPage,
+        quality: validatedOptions.quality,
+      };
 
-      console.log(chalk.green("✓ Analysis complete"));
+      const screenshotResult = await screenshotService.capture(screenshotOptions);
+      if (screenshotResult.err) {
+        logger.error(`Screenshot error: ${screenshotResult.val.message}`);
+        process.exit(1);
+      }
+
+      logger.info(`Screenshot saved to: ${screenshotResult.val.path}`);
+      logger.info("Screenshot metadata", screenshotResult.val.metadata);
+
+      // Implementation for analysis service will be added in Phase 5
+
+      console.log(chalk.green("✓ Screenshot captured successfully"));
+      console.log(chalk.blue(`📸 Screenshot: ${screenshotResult.val.path}`));
     } catch (error) {
-      logger.error(`Unexpected error: ${error}`);
+      logger.error("Unexpected error", error);
       process.exit(1);
     }
   });
