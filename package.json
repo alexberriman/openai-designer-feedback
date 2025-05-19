@@ -1,15 +1,23 @@
 {
   "name": "@alexberriman/openai-designer-feedback",
   "version": "0.1.0",
-  "description": "CLI tool for getting feedback from openai assistant about a webpage",
-  "main": "dist/index.js",
+  "description": "CLI tool that captures website screenshots using @alexberriman/screenshotter and provides professional web design/UX feedback via OpenAI's gpt-image-1 vision model. Focus on identifying critical issues and design errors.",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "design-feedback": "./dist/index.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
+  "packageManager": "npm@10.0.0+",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
@@ -25,14 +33,21 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run test",
     "lint-staged": "lint-staged",
-    "prepublishOnly": "npm run build",
-    "prepack": "npm run build"
+    "prepublishOnly": "npm run check && npm run build",
+    "prepack": "npm run build",
+    "release": "npm version patch && npm publish --access public && git push --follow-tags",
+    "release:minor": "npm version minor && npm publish --access public && git push --follow-tags",
+    "release:major": "npm version major && npm publish --access public && git push --follow-tags"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alexberriman/openai-designer-feedback.git"
   },
-  "author": "Alex Berriman",
+  "author": "Alex Berriman <alexberriman@users.noreply.github.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/alexberriman/openai-designer-feedback/issues"
@@ -69,14 +84,32 @@
   },
   "files": [
     "dist",
-    "bin"
+    "README.md",
+    "LICENSE",
+    "package.json"
   ],
+  "sideEffects": false,
   "keywords": [
+    "web-design",
+    "design-feedback",
+    "ux-feedback",
     "screenshot",
     "cli",
     "website",
     "capture",
     "viewport",
-    "playwright"
+    "playwright",
+    "openai",
+    "ai-assistant",
+    "vision-api",
+    "gpt",
+    "design-review",
+    "web-analysis",
+    "design-critique",
+    "website-feedback",
+    "ui-feedback",
+    "design-assistant",
+    "web-development",
+    "developer-tools"
   ]
 }
