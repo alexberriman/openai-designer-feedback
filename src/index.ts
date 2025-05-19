@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { Command } from "commander";
 import chalk from "chalk";
 import type { CliOptions, ValidatedOptions } from "./types/cli.js";
@@ -179,4 +177,9 @@ async function validateOptions(
   return Ok(validatedOptions);
 }
 
-program.parse();
+export { program };
+
+// Parse when executed directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  program.parse();
+}

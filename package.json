@@ -12,7 +12,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "design-feedback": "./dist/index.js"
+    "design-feedback": "bin/design-feedback"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -60,6 +60,7 @@
     "commander": "^12.0.0",
     "openai": "^4.100.0",
     "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
     "playwright": "^1.52.0",
     "ts-results": "^3.3.0"
   },
@@ -84,6 +85,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "README.md",
     "LICENSE",
     "package.json"
