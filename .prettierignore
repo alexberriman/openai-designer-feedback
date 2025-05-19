@@ -1,0 +1,23 @@
+# Build and output directories
+dist/
+build/
+storybook-static/
+public/
+coverage/
+jscpd-report/
+
+# Generated files and dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Cache directories
+.cache/
+.next/
+.vite/
+.turbo/
+
+# Temporary files
+*.log
+*.tsbuildinfo

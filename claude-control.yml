@@ -1,0 +1,225 @@
+name: Design Feedback CLI
+description: A command-line tool that captures screenshots of websites and provides expert web design/UX feedback using OpenAI's vision API.
+
+# Project type
+project_type: "node"
+
+# Project brief/documentation
+project:
+  brief_file: README.md
+  vision: "Creating an AI-powered design critique tool for automated web design quality assurance"
+  key_goals:
+    - "Build a CLI tool using Commander.js for easy command-line interaction"
+    - "Integrate @alexberriman/screenshotter for website capture"
+    - "Use OpenAI's gpt-image-1 model for design analysis"
+    - "Provide actionable design feedback focused on critical issues"
+    - "Support multiple output formats (text and JSON)"
+    - "Implement idempotent configuration management"
+  design_principles: "Clean, functional Node.js code with strong typing, AI integration, and excellent error handling."
+
+# Claude interaction settings
+claude:
+  # Enable mainline development (commit directly to main)
+  main_only: true
+
+  # Exit when completion code found
+  exit_on_complete: false
+
+  # Default settings
+  confirmation_wait_time: 5
+  idle_threshold: 2
+  skip_git_checks: true
+
+# Enable Claude.md file generation
+claude_md:
+  enabled: true
+  skip_tech_guidelines: true
+
+  # Explicitly define project category
+  project_category: "cli"
+
+  # Code style conventions for Claude.md
+  code_style:
+    case_style: "kebab-case"
+    indentation: "spaces"
+    indent_size: 2
+    quote_style: "double"
+    max_line_length: 100
+    trailing_comma: true
+    semicolons: true
+    component_structure: "directory"
+    test_pattern: "{name}.test.ts"
+
+  # Preferred technologies
+  preferred_technologies:
+    cli:
+      language: "typescript"
+      framework: "commander"
+      screenshot_tool: "@alexberriman/screenshotter"
+      ai_model: "openai gpt-image-1"
+      error_handling: "ts-results"
+      output_formatting: "chalk"
+      # Define architecture patterns
+      patterns:
+        functional_approach: true
+        small_pure_functions: true
+        feature_based_modules: true
+        barrel_files: true
+    testing:
+      unit: "vitest"
+      location: "adjacent"
+    build:
+      bundler: "tsup"
+      runtime: "bun"
+
+  # Custom additional sections for CLAUDE.md
+  additional_sections:
+    - title: "CLI Architecture"
+      content: |
+        This CLI tool follows these architectural principles:
+
+        - **Command-line Interface**: Uses Commander.js for argument parsing
+        - **Screenshot Capture**: @alexberriman/screenshotter for website screenshots
+        - **AI Analysis**: OpenAI's gpt-image-1 for design feedback
+        - **TypeScript**: Strong typing throughout the codebase
+        - **Error Handling**: Functional error handling with ts-results
+        - **Configuration**: Idempotent API key management
+        - **Output Formats**: Text and JSON formatters with chalk for terminal colors
+
+    - title: "Module Structure"
+      content: |
+        The project should be organized as follows:
+
+        ```
+        src/
+          index.ts          # CLI entry point (#!/usr/bin/env node)
+          commands/         # Command handlers
+          services/         # Core services
+            screenshot-service.ts   # @alexberriman/screenshotter wrapper
+            vision-service.ts       # OpenAI gpt-image-1 integration
+            analysis-service.ts     # Design feedback logic
+          types/            # TypeScript type definitions
+            index.ts
+            options.ts
+            analysis.ts
+            errors.ts
+          utils/            # Utility functions
+            formatters/     # Output formatters
+              text.ts
+              json.ts
+            config-loader.ts
+            validator.ts
+          config/           # Configuration management
+            defaults.ts
+        ```
+
+    - title: "Error Handling Guidelines"
+      content: |
+        When implementing error handling:
+
+        - Use ts-results for all fallible operations
+        - Return Result<T, E> from functions that might fail
+        - Provide descriptive error messages
+        - Never silence errors or use try/catch except at boundaries
+        - Exit with appropriate exit codes (0 for success, 1 for errors)
+        - Use console.error for error output
+        - Use console.log for success output
+
+  # Permissions for Claude
+  allow_permissions:
+    enabled: true
+    allow_read: ["**/*"]
+    allow_write: ["**/*"]
+    allow_executions: ["npm", "npx", "tsx", "bun"]
+
+# Commands to execute when Claude is idle
+commands:
+  lint: npm run lint
+  typecheck: npm run typecheck
+  test: npm run test
+
+# Command execution sequence
+command_sequence: ["lint", "typecheck", "test"]
+
+# Define quality standards to enforce
+quality_standards:
+  # Required dev dependencies
+  required_devDependencies:
+    - "eslint"
+    - "prettier"
+    - "typescript"
+    - "vitest"
+    - "@typescript-eslint/eslint-plugin"
+    - "@typescript-eslint/parser"
+    - "eslint-config-prettier"
+    - "eslint-plugin-unicorn"
+    - "eslint-plugin-sonarjs"
+    - "husky"
+    - "lint-staged"
+    - "tsup"
+    - "tsx"
+
+  # Configuration files that must exist
+  required_config_files:
+    - "eslint.config.js"
+    - "tsconfig.json"
+    - "vitest.config.ts"
+    - ".husky/pre-commit"
+
+# Custom prompts
+prompts:
+  # Updated prompt for Claude when errors occur
+  error_fix: |
+    Please fix issues and warnings that occurred when running `{command}`.
+    Important guidelines:
+
+    1. Do NOT use `eslint-disable`, `ts-ignore`, or any other suppression comments
+    2. Do NOT use the `any` type in TypeScript - always use proper type definitions
+    3. Fix the root causes of each issue correctly and cleanly
+    4. Ensure your changes follow the existing code style and patterns
+
+    Remember these key principles:
+    1. Create small, pure functions with a single responsibility
+    2. Use strong TypeScript typing - no any, unknown, or missing types
+    3. Follow kebab-case for file names and maintain proper module structure
+    4. Use functional error handling with ts-results
+    5. Provide comprehensive error messages and validation
+
+    Focus on creating high-quality CLI code that addresses the underlying issues.
+
+    If you can't fix all issues, pick the most critical ones first, think deeply about proper solutions, and implement them correctly. Never bypass eslint or typescript rules.
+
+  # Prompt sent for todo list guidance
+  todo_prompt: |
+    Please follow these steps for each task:
+
+    1. First, check `./TODO.md` and review all tasks
+    2. Update TODO.md to mark completed tasks (use ✅ or [DONE] prefix)
+    3. Select ONLY ONE next incomplete task to work on. Stay on main branch.
+    4. Think very deeply about this ONE task before implementing
+    5. Break the task into smaller, logical steps
+    6. Focus on implementing ONE step at a time
+    7. Use conventional commits (feat, fix, docs, style, refactor, perf, test, chore)
+    8. After completing the task, update TODO.md
+
+    IMPORTANT: Complete ONE task fully before moving to the next.
+
+    CLI Tool Requirements:
+    - Build robust command-line interface with Commander.js
+    - Use @alexberriman/screenshotter for screenshot capture
+    - Integrate OpenAI's gpt-image-1 for design analysis
+    - Implement comprehensive error handling with ts-results
+    - Create pure, testable utility functions
+    - Support multiple output formats (text and JSON)
+    - Handle API authentication and configuration gracefully
+    - Provide clear, actionable design feedback
+    - Focus on critical issues, not minor UI tweaks
+
+    Module Organization:
+    1. Keep modules focused and single-purpose
+    2. Separate screenshot, vision, and analysis services
+    3. Place formatters in utils/formatters directory
+    4. Keep types in dedicated types/ directory
+    5. Test all pure functions thoroughly
+
+    Focus on building a professional, AI-powered design critique tool.

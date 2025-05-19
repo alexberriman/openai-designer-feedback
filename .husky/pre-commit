@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+
+# Enable debugging
+set -x
+
+echo "Starting pre-commit hook"
+
+# Get the current branch (handle case where HEAD doesn't exist yet)
+if git rev-parse --abbrev-ref HEAD 2>/dev/null; then
+  BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  
+  if [ "$BRANCH" != "main" ]; then
+    echo "⛔ ERROR: This repository uses mainline development."
+    echo "❌ Branches are not permitted in this repository."
+    echo "✅ Please commit and push directly to main."
+    exit 1
+  fi
+else
+  echo "📝 This appears to be the initial commit - proceeding with checks."
+  # Assume we're on main for the first commit
+  BRANCH="main"
+fi
+
+# Check for unstaged changes - only if we have a HEAD reference
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  if git diff --name-only | grep -q .; then
+    echo "⛔ ERROR: You have unstaged changes."
+    echo "❌ All changes must be staged before committing."
+    echo "✅ Please use 'git add .' to stage all changes."
+    exit 1
+  fi
+else
+  echo "📝 Skipping unstaged changes check for initial commit."
+fi
+
+# Check for changes to ESLint configuration files
+echo "Checking for ESLint configuration changes"
+ESLINT_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.eslintrc\.|eslintrc\.js|eslintrc\.cjs|bypass-lint|eslint-disable|\.eslintignore' || true)
+
+if [ -n "$ESLINT_FILES" ]; then
+  echo "⛔ ERROR: Attempting to commit changes to ESLint configuration files."
+  echo "❌ Modifications to ESLint configuration files are not permitted except for eslint.config.js."
+  echo "❌ You should NEVER bypass ESLint rules or create files to disable linting."
+  echo "✅ Instead, please investigate and fix underlying linting and TypeScript issues systematically."
+  echo ""
+  echo "Affected files:"
+  echo "$ESLINT_FILES"
+  echo ""
+  echo "RECOMMENDATION: Address code quality issues at their source rather than modifying the linting rules."
+  echo "Focus on resolving one issue at a time to maintain high code quality standards."
+  exit 1
+fi
+
+# Check for eslint-disable comments in changed files - works for initial commit too
+ESLINT_DISABLED_FILES=$(git diff --cached -U0 | grep -E '\+.*eslint-disable' || true)
+if [ -n "$ESLINT_DISABLED_FILES" ]; then
+  echo "⛔ ERROR: Attempting to commit code with eslint-disable comments."
+  echo "❌ Adding eslint-disable comments is not permitted in this repository."
+  echo "❌ You should NEVER bypass ESLint rules with disable comments."
+  echo "✅ Instead, please fix the underlying linting issues in your code."
+  echo ""
+  echo "Detected eslint-disable comments:"
+  echo "$ESLINT_DISABLED_FILES"
+  echo ""
+  echo "RECOMMENDATION: Fix the linting issues directly rather than disabling rules."
+  exit 1
+fi
+
+# Check for eslint configuration in package.json
+ESLINT_PKG_CONFIG=$(git diff --cached -U0 package.json | grep -E '\+.*"eslintConfig":' || true)
+if [ -n "$ESLINT_PKG_CONFIG" ]; then
+  echo "⛔ ERROR: Attempting to add ESLint configuration to package.json."
+  echo "❌ ESLint configuration in package.json is not permitted."
+  echo "❌ Only eslint.config.js should be used for ESLint configuration."
+  echo "✅ Please modify only the eslint.config.js file for linting configuration."
+  exit 1
+fi
+
+# Check for TypeScript bypassing attempts
+TS_BYPASS_FILES=$(git diff --cached -U0 | grep -E '\+.*(@ts-ignore|@ts-nocheck|\/\/ @ts-expect-error)' || true)
+if [ -n "$TS_BYPASS_FILES" ]; then
+  echo "⛔ ERROR: Attempting to commit code that bypasses TypeScript type checking."
+  echo "❌ Adding @ts-ignore, @ts-nocheck, or @ts-expect-error comments is not permitted."
+  echo "❌ You should NEVER bypass TypeScript type checking with these comments."
+  echo "✅ Instead, please fix the underlying type issues in your code."
+  echo ""
+  echo "Detected TypeScript bypassing comments:"
+  echo "$TS_BYPASS_FILES"
+  echo ""
+  echo "RECOMMENDATION: Fix the type issues directly rather than bypassing them."
+  exit 1
+fi
+
+# Check for modifications to tsconfig files that might weaken type checking
+TS_CONFIG_WEAKENING=$(git diff --cached -U0 tsconfig*.json | grep -E '\+.*(noImplicitAny|strict|skipLibCheck|allowJs|checkJs).*false' || true)
+if [ -n "$TS_CONFIG_WEAKENING" ]; then
+  echo "⛔ ERROR: Attempting to weaken TypeScript configuration."
+  echo "❌ Disabling strict type checking features is not permitted."
+  echo "❌ You should NEVER weaken TypeScript configuration to avoid fixing type issues."
+  echo "✅ Instead, please fix the underlying type issues in your code."
+  echo ""
+  echo "Detected TypeScript config weakening:"
+  echo "$TS_CONFIG_WEAKENING"
+  echo ""
+  echo "RECOMMENDATION: Maintain strict TypeScript checks and fix type issues properly."
+  exit 1
+fi
+
+# Check for large files
+echo "🔍 Checking for large files in commit..."
+
+# Size thresholds
+SIZE_THRESHOLD_KB=100
+LINE_THRESHOLD=2000
+
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMRT)
+
+# Arrays to store large files
+LARGE_SIZE_FILES=()
+LARGE_LINE_FILES=()
+
+# Function to count lines in a file
+count_lines() {
+  wc -l < "$1" | tr -d ' '
+}
+
+# Check each staged file
+for FILE in $STAGED_FILES; do
+  # Skip if file doesn't exist (might have been deleted)
+  [ -f "$FILE" ] || continue
+  
+  # Skip binary files for line count check (but still check size)
+  IS_BINARY=false
+  if file "$FILE" | grep -q 'binary'; then
+    IS_BINARY=true
+  fi
+  
+  # Check file size
+  FILE_SIZE_KB=$(du -k "$FILE" | cut -f1)
+  if [ "$FILE_SIZE_KB" -gt "$SIZE_THRESHOLD_KB" ]; then
+    LARGE_SIZE_FILES+=("$FILE ($FILE_SIZE_KB KB)")
+  fi
+  
+  # Check line count for text files
+  if [ "$IS_BINARY" = false ]; then
+    LINE_COUNT=$(count_lines "$FILE")
+    if [ "$LINE_COUNT" -gt "$LINE_THRESHOLD" ]; then
+      LARGE_LINE_FILES+=("$FILE ($LINE_COUNT lines)")
+    fi
+  fi
+done
+
+# Display warning if large files were found
+if [ ${#LARGE_SIZE_FILES[@]} -gt 0 ] || [ ${#LARGE_LINE_FILES[@]} -gt 0 ]; then
+  echo "⚠️  WARNING: Large files detected in your commit:"
+  
+  if [ ${#LARGE_SIZE_FILES[@]} -gt 0 ]; then
+    echo ""
+    echo "Files larger than $SIZE_THRESHOLD_KB KB:"
+    for FILE in "${LARGE_SIZE_FILES[@]}"; do
+      echo "  - $FILE"
+    done
+  fi
+  
+  if [ ${#LARGE_LINE_FILES[@]} -gt 0 ]; then
+    echo ""
+    echo "Files with more than $LINE_THRESHOLD lines:"
+    for FILE in "${LARGE_LINE_FILES[@]}"; do
+      echo "  - $FILE"
+    done
+  fi
+  
+  echo ""
+  echo "These might be artifacts or unintentionally large files."
+  echo "If these are not meant to be committed, please:"
+  echo "  1. Add them to .gitignore"
+  echo "  2. Run: git restore --staged <file>"
+  echo "  3. Commit again"
+  echo ""
+  echo "If you're sure they should be committed, you can proceed."
+  echo "This is only a warning - your commit will still go through."
+  echo ""
+fi
+
+# Continue with other pre-commit checks
+echo "Running lint-staged with Bun"
+bun lint-staged || {
+  echo "⛔ ERROR: Linting failed."
+  echo "❌ Please fix all linting issues before committing."
+  echo "✅ Run 'bun run lint' or 'bun run lint:fix' to see and fix the linting errors."
+  echo ""
+  echo "‼️ STRICT POLICY ‼️"
+  echo "Under NO circumstances should you attempt to:"
+  echo "  - Add eslint-disable comments to bypass linting rules"
+  echo "  - Modify eslint configuration to weaken rules"
+  echo "  - Override the pre-commit hook to skip linting"
+  echo "  - Ignore errors by making temporary fixes"
+  echo ""
+  echo "Proper solution: Fix the code to match the established style guide and linting rules."
+  echo "Consistent code style is essential for maintainability and collaboration."
+  exit 1
+}
+
+# Run TypeScript type checking
+echo "🧪 Running TypeScript type checking..."
+bun run typecheck
+if [ $? -ne 0 ]; then
+  echo "⛔ ERROR: TypeScript type checking failed."
+  echo "❌ Please fix all type errors before committing."
+  echo "✅ Run 'bun run typecheck' to see the full list of errors."
+  echo ""
+  echo "‼️ STRICT POLICY ‼️"
+  echo "Under NO circumstances should you attempt to:"
+  echo "  - Add @ts-ignore or @ts-nocheck comments to bypass TypeScript"
+  echo "  - Modify tsconfig.json to weaken type checking"
+  echo "  - Disable TypeScript validation in any way"
+  echo ""
+  echo "Proper solution: Address type errors by fixing your code's type definitions."
+  echo "Type safety is essential for maintaining code quality and preventing bugs."
+  exit 1
+else
+  echo "✅ TypeScript type checking passed successfully."
+fi
+
+# Run tests to ensure all tests pass before committing
+echo "🧪 Running tests..."
+npm run test
+if [ $? -ne 0 ]; then
+  echo "⛔ ERROR: Tests failed."
+  echo "❌ Please fix all failing tests before committing."
+  echo "✅ Run 'npm run test' to see the failing tests and fix them."
+  echo ""
+  echo "‼️ STRICT POLICY ‼️"
+  echo "Under NO circumstances should you attempt to:"
+  echo "  - Modify or delete failing tests to make them pass"
+  echo "  - Skip tests with .skip() or similar methods"
+  echo "  - Comment out test assertions"
+  echo "  - Bypass the pre-commit hook to avoid running tests"
+  echo ""
+  echo "Proper solution: Fix the underlying code issues that cause test failures."
+  echo "Reliable tests are essential for maintaining code quality and preventing regressions."
+  exit 1
+else
+  echo "✅ All tests passed successfully."
+fi
+
+echo "Pre-commit hook completed successfully"
+exit 0

@@ -1,0 +1,41 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Git files
+.git/
+.gitignore
+
+# Documentation files that aren't needed in the container
+TODO.md
+CLAUDE.md
+CLAUDE-CUSTOM.md
+
+# Development files
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# Test files and coverage
+coverage/
+*.test.ts
+*.test.js
+vitest.config.ts
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# CI/CD files
+.github/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore

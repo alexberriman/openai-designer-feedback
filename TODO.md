@@ -1,0 +1,179 @@
+# Design Feedback CLI Tool - TODO
+
+## Overview
+Create a CLI tool that captures website screenshots using @alexberriman/screenshotter and sends them to an OpenAI assistant for professional web design/UX feedback focused on critical issues and errors.
+
+## Phase 1: Initial Setup
+
+- [ ] Set up Bun project with TypeScript configuration
+- [ ] Install and configure dependencies:
+  - [ ] `commander` for CLI interface
+  - [ ] `@alexberriman/screenshotter` for taking screenshots
+  - [ ] `openai` SDK for AI integration
+  - [ ] `ts-results` for error handling
+  - [ ] `pino` for logging
+  - [ ] `chalk` for colored console output
+  - [ ] TypeScript type definitions
+- [ ] Set up build pipeline with `tsup`
+- [ ] Create base project structure:
+  ```
+  src/
+    index.ts          # CLI entry point
+    commands/         # Command handlers
+    services/         # OpenAI, screenshot services
+    types/            # TypeScript interfaces
+    utils/            # Utility functions
+    config/           # Configuration handling
+  ```
+
+## Phase 2: Configuration Management
+
+- [ ] Create configuration loader for OpenAI API key
+  - [ ] Support environment variables (`OPENAI_API_KEY`)
+  - [ ] Support config file (~/.design-feedback/config.json)
+  - [ ] Interactive prompt if no API key found
+- [ ] Validate configuration on startup
+- [ ] Create config types and interfaces
+
+## Phase 3: CLI Interface
+
+- [ ] Create main CLI command with Commander.js
+- [ ] Add command-line options:
+  - [ ] `--viewport, -v <size>` (mobile, tablet, desktop, or custom WIDTHxHEIGHT)
+  - [ ] `--output, -o <path>` (screenshot output path)
+  - [ ] `--format, -f <format>` (json, text - default: text)
+  - [ ] `--wait, -w <seconds>` (wait time before screenshot)
+  - [ ] `--wait-for <selector>` (wait for specific element)
+  - [ ] `--no-full-page` (capture viewport only)
+  - [ ] `--quality <number>` (JPEG quality 0-100)
+  - [ ] `--api-key <key>` (override default API key)
+  - [ ] `--verbose` (enable debug logging)
+- [ ] Add input validation for all options
+- [ ] Create help documentation
+- [ ] Handle error states gracefully
+
+## Phase 4: Screenshot Service
+
+- [ ] Create wrapper service around @alexberriman/screenshotter (you can see readme for this repo: https://github.com/alexberriman/screenshotter)
+- [ ] Create interface for screenshot options:
+  ```typescript
+  interface ScreenshotOptions {
+    url: string;
+    viewport?: string;
+    outputPath?: string;
+    waitTime?: number;
+    waitFor?: string;
+    fullPage?: boolean;
+    quality?: number;
+  }
+  ```
+- [ ] Implement screenshot capture with error handling
+- [ ] Return Result<ScreenshotResult, ScreenshotError>
+- [ ] Validate URL format before processing
+- [ ] Handle temporary file creation if no output path specified (store screenshot files in /tmp)
+- [ ] Add screenshot metadata (viewport size, timestamp)
+
+## Phase 5: OpenAI Vision API to analyze screenshot
+
+OpenAI Vision:
+- Use gpt-image-1 model for image analysis
+- Pass screenshot as base64 encoded image
+
+- [ ] Create OpenAI vision analysis service using gpt-image-1
+- [ ] Implement vision model integration:
+  - [ ] Use gpt-image-1 model
+  - [ ] Convert screenshot to base64 format
+  - [ ] Create message with image content
+  - [ ] Configure system prompt with appropriate instructions:
+    - Experience web designer/UX expert role
+    - Focus on critical issues and errors
+    - Avoid minor UI/UX suggestions
+    - Consider device context (mobile vs desktop)
+    - Call out all obvious design errors and issues
+- [ ] Create specific system prompt template:
+  ```
+  You are an experienced web designer and UX expert reviewing website screenshots. 
+  Focus on identifying critical issues, errors, and fundamental problems rather 
+  than minor UI improvements. Consider the device context ({viewport}) when 
+  analyzing. Provide clear, actionable feedback about actual problems.
+  ```
+- [ ] Handle model selection and fallbacks
+
+## Phase 6: Analysis Service
+
+- [ ] Create service to send screenshots to OpenAI assistant
+- [ ] Implement proper message formatting:
+  - [ ] Include viewport/device context
+  - [ ] Set appropriate system prompts
+- [ ] Handle API response parsing
+- [ ] Implement retry logic for API failures
+- [ ] Add timeout handling
+- [ ] Return Result<AnalysisResult, AnalysisError>
+
+## Phase 7: Output Formatting
+
+- [ ] Create output formatter interface
+- [ ] Implement text output formatter:
+  - [ ] Color-coded severity levels
+  - [ ] Clear section headers
+  - [ ] Bullet-pointed issues
+  - [ ] Readable console output
+- [ ] Implement JSON output formatter:
+  - [ ] Structured data format
+  - [ ] Include metadata (timestamp, URL, viewport)
+  - [ ] Categorized issues
+- [ ] Add option to save output to file
+
+## Phase 8: Error Handling & Logging
+
+- [ ] Create error messages for user-friendly output
+- [ ] Add debug logging with Pino
+- [ ] Implement proper exit codes
+- [ ] Add verbose mode for troubleshooting
+
+## Phase 10: Documentation & Polish
+
+- [ ] Write comprehensive README.md:
+  - [ ] Installation instructions
+  - [ ] Configuration guide
+  - [ ] Usage examples
+  - [ ] API key setup
+  - [ ] Output format examples
+
+## Phase 11: Packaging & Distribution
+
+- [ ] Configure package.json for npm publication
+- [ ] Create executable binary versions
+
+## Technical Considerations
+
+### Error Handling Strategy
+- Use `ts-results` throughout for functional error handling
+- Never throw exceptions except at boundaries
+- Provide clear error messages to users
+- Log detailed errors in verbose mode
+
+### Performance
+- Minimize dependencies
+- Lazy load OpenAI client
+- Stream large responses when possible
+- Implement proper cleanup for temporary files
+
+### Security
+- Never log API keys
+- Validate all user inputs
+- Sanitize URLs before processing
+- Use environment variables for sensitive data
+
+### User Experience
+- Provide progress indicators for long operations
+- Clear, actionable error messages
+- Intuitive command-line interface
+- Helpful command hints and examples
+
+### Code Quality
+- Follow functional programming principles
+- Keep functions small and focused
+- Use TypeScript strict mode
+- Maintain 80%+ test coverage
+- Document all public APIs

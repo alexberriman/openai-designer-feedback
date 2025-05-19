@@ -1,0 +1,11 @@
+#!/bin/sh
+
+commit_msg_file=$1
+commit_msg=$(cat "$commit_msg_file")
+
+if echo "$commit_msg" | grep -i "claude" > /dev/null; then
+  echo "🚫 Commit rejected: Please avoid mentioning Claude in commit messages."
+  echo "❌ Focus commit messages on WHAT changed and WHY, not HOW it was implemented."
+  echo "✅ Example: feat(products): add pagination to product endpoints"
+  exit 1
+fi

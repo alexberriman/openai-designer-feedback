@@ -1,0 +1,68 @@
+# Source files (users don't need these)
+src/
+*.ts
+!dist/*.d.ts
+
+# Config files
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+eslint.config.js
+.lintstagedrc
+.husky/
+
+# Test files
+*.test.ts
+*.test.js
+coverage/
+.nyc_output/
+
+# Development files
+.vscode/
+.idea/
+.git/
+.gitignore
+.github/
+
+# Documentation source files  
+TODO.md
+CLAUDE.md
+CLAUDE-CUSTOM.md
+claude-control.yml
+
+# Build artifacts we don't want
+*.tsbuildinfo
+*.map
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env*
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Screenshots and images
+*.png
+*.jpg
+*.jpeg
+screenshots/
+
+# Docker files (users can build their own)
+Dockerfile
+docker-compose.yml
+
+# Lock files (controversial, but let users use their own)
+bun.lock
+pnpm-lock.yaml
+yarn.lock
+
+# Misc
+*.cache
+.turbo
+assistant_cache/
+prompt_enhancement_cache/
