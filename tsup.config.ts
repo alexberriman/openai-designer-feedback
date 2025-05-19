@@ -10,4 +10,7 @@ export default defineConfig({
   minify: false,
   platform: "node",
   shims: false,
+  banner: {
+    js: "#!/usr/bin/env node",
+  },
 });
