@@ -5,17 +5,17 @@ Create a CLI tool that captures website screenshots using @alexberriman/screensh
 
 ## Phase 1: Initial Setup
 
-- [ ] Set up Bun project with TypeScript configuration
-- [ ] Install and configure dependencies:
-  - [ ] `commander` for CLI interface
-  - [ ] `@alexberriman/screenshotter` for taking screenshots
-  - [ ] `openai` SDK for AI integration
-  - [ ] `ts-results` for error handling
-  - [ ] `pino` for logging
-  - [ ] `chalk` for colored console output
-  - [ ] TypeScript type definitions
-- [ ] Set up build pipeline with `tsup`
-- [ ] Create base project structure:
+- [x] Set up Bun project with TypeScript configuration
+- [x] Install and configure dependencies:
+  - [x] `commander` for CLI interface
+  - [x] `@alexberriman/screenshotter` for taking screenshots
+  - [x] `openai` SDK for AI integration
+  - [x] `ts-results` for error handling
+  - [x] `pino` for logging
+  - [x] `chalk` for colored console output
+  - [x] TypeScript type definitions
+- [x] Set up build pipeline with `tsup`
+- [x] Create base project structure:
   ```
   src/
     index.ts          # CLI entry point
