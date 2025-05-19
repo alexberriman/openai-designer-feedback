@@ -8,6 +8,7 @@ export interface CliOptions {
   quality?: number;
   apiKey?: string;
   verbose?: boolean;
+  save?: string;
 }
 
 export interface ValidatedOptions extends CliOptions {

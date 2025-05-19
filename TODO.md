@@ -73,31 +73,31 @@ Create a CLI tool that captures website screenshots using @alexberriman/screensh
 - [x] Handle temporary file creation if no output path specified (store screenshot files in /tmp)
 - [x] Add screenshot metadata (viewport size, timestamp)
 
-## Phase 5: OpenAI Vision API to analyze screenshot
+## Phase 5: OpenAI Vision API to analyze screenshot ✅
 
 OpenAI Vision:
 - Use gpt-image-1 model for image analysis
 - Pass screenshot as base64 encoded image
 
-- [ ] Create OpenAI vision analysis service using gpt-image-1
-- [ ] Implement vision model integration:
-  - [ ] Use gpt-image-1 model
-  - [ ] Convert screenshot to base64 format
-  - [ ] Create message with image content
-  - [ ] Configure system prompt with appropriate instructions:
+- [x] Create OpenAI vision analysis service using gpt-image-1
+- [x] Implement vision model integration:
+  - [x] Use gpt-image-1 model
+  - [x] Convert screenshot to base64 format
+  - [x] Create message with image content
+  - [x] Configure system prompt with appropriate instructions:
     - Experience web designer/UX expert role
     - Focus on critical issues and errors
     - Avoid minor UI/UX suggestions
     - Consider device context (mobile vs desktop)
     - Call out all obvious design errors and issues
-- [ ] Create specific system prompt template:
+- [x] Create specific system prompt template:
   ```
   You are an experienced web designer and UX expert reviewing website screenshots. 
   Focus on identifying critical issues, errors, and fundamental problems rather 
   than minor UI improvements. Consider the device context ({viewport}) when 
   analyzing. Provide clear, actionable feedback about actual problems.
   ```
-- [ ] Handle model selection and fallbacks
+- [x] Handle model selection and fallbacks
 
 ## Phase 6: Analysis Service
 

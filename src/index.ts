@@ -15,6 +15,7 @@ import { ensureApiKey } from "./utils/config-loader.js";
 import { Result, Ok, Err } from "ts-results";
 import { AnalysisService } from "./services/analysis-service.js";
 import type { AnalysisOptions } from "./types/analysis.js";
+import { TextFormatter, JsonFormatter, writeOutputToFile } from "./utils/formatters/index.js";
 
 const program = new Command();
 
@@ -32,6 +33,7 @@ program
   .option("--quality <number>", "JPEG quality (0-100)", "90")
   .option("--api-key <key>", "Override default OpenAI API key")
   .option("--verbose", "Enable verbose logging")
+  .option("--save <path>", "Save output to file")
   .action(async (url: string, options: CliOptions) => {
     const logger = createLogger({ verbose: options.verbose });
 
@@ -73,24 +75,29 @@ program
 
       const analysis = analysisResult.val;
 
-      // Output results based on format
-      if (validatedOptions.format === "json") {
-        const jsonOutput = {
-          url: validatedOptions.url,
-          timestamp: analysis.timestamp,
-          viewport: analysis.viewport,
-          model: analysis.model,
-          analysisTime: analysis.analysisTime,
-          screenshotPath: analysis.screenshotPath,
-          feedback: analysis.content,
-        };
-        console.log(JSON.stringify(jsonOutput, null, 2));
-      } else {
-        console.log(chalk.green("\n✓ Analysis complete"));
-        console.log(chalk.blue("\n📊 Design Feedback:"));
-        console.log(chalk.white("\n" + analysis.content));
-        if (analysis.screenshotPath) {
-          console.log(chalk.gray(`\n📸 Screenshot: ${analysis.screenshotPath}`));
+      // Format output
+      const formatter =
+        validatedOptions.format === "json" ? new JsonFormatter() : new TextFormatter();
+
+      const formatterOptions = {
+        verbose: validatedOptions.verbose,
+        color: true,
+        outputPath: validatedOptions.save,
+      };
+
+      const formatted = formatter.format(analysis, formatterOptions);
+
+      // Output to console
+      console.log(formatted.content);
+
+      // Save to file if requested
+      if (validatedOptions.save) {
+        const saveResult = await writeOutputToFile(formatted, validatedOptions.save);
+        if (saveResult.ok) {
+          console.log(chalk.green(`\n✓ Output saved to: ${saveResult.val}`));
+        } else {
+          logger.error(`Failed to save output: ${saveResult.val.message}`);
+          process.exit(1);
         }
       }
     } catch (error) {
