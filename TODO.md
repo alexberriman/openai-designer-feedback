@@ -37,20 +37,20 @@ Create a CLI tool that captures website screenshots using @alexberriman/screensh
 
 ## Phase 3: CLI Interface
 
-- [ ] Create main CLI command with Commander.js
-- [ ] Add command-line options:
-  - [ ] `--viewport, -v <size>` (mobile, tablet, desktop, or custom WIDTHxHEIGHT)
-  - [ ] `--output, -o <path>` (screenshot output path)
-  - [ ] `--format, -f <format>` (json, text - default: text)
-  - [ ] `--wait, -w <seconds>` (wait time before screenshot)
-  - [ ] `--wait-for <selector>` (wait for specific element)
-  - [ ] `--no-full-page` (capture viewport only)
-  - [ ] `--quality <number>` (JPEG quality 0-100)
-  - [ ] `--api-key <key>` (override default API key)
-  - [ ] `--verbose` (enable debug logging)
-- [ ] Add input validation for all options
-- [ ] Create help documentation
-- [ ] Handle error states gracefully
+- [x] Create main CLI command with Commander.js
+- [x] Add command-line options:
+  - [x] `--viewport, -v <size>` (mobile, tablet, desktop, or custom WIDTHxHEIGHT)
+  - [x] `--output, -o <path>` (screenshot output path)
+  - [x] `--format, -f <format>` (json, text - default: text)
+  - [x] `--wait, -w <seconds>` (wait time before screenshot)
+  - [x] `--wait-for <selector>` (wait for specific element)
+  - [x] `--no-full-page` (capture viewport only)
+  - [x] `--quality <number>` (JPEG quality 0-100)
+  - [x] `--api-key <key>` (override default API key)
+  - [x] `--verbose` (enable debug logging)
+- [x] Add input validation for all options
+- [x] Create help documentation
+- [x] Handle error states gracefully
 
 ## Phase 4: Screenshot Service
 
