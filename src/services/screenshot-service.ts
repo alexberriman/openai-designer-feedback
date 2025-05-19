@@ -6,12 +6,12 @@ import { readFile, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { Result, Ok, Err } from "ts-results";
 import type { ScreenshotOptions, ScreenshotResult, ScreenshotError } from "../types/screenshot.js";
-import { createLogger } from "../utils/logger.js";
+import { getGlobalLogger } from "../utils/logger.js";
 
 const execAsync = promisify(exec);
 
 export class ScreenshotService {
-  private logger = createLogger();
+  private logger = getGlobalLogger();
 
   async capture(options: ScreenshotOptions): Promise<Result<ScreenshotResult, ScreenshotError>> {
     try {
@@ -20,14 +20,17 @@ export class ScreenshotService {
       // Validate URL format
       const urlValidation = this.validateUrl(options.url);
       if (urlValidation.err) {
+        this.logger.error("URL validation failed", urlValidation.val);
         return Err(urlValidation.val);
       }
 
       // Generate output path if not provided
       const outputPath = options.outputPath ?? this.generateTempPath(options.url);
+      this.logger.debug("Using output path", { outputPath });
 
       // Build command
       const command = this.buildCommand(options, outputPath);
+      this.logger.debug("Screenshot command", { command });
       this.logger.debug("Executing command", { command });
 
       // Execute screenshotter
@@ -35,8 +38,9 @@ export class ScreenshotService {
         await execAsync(command);
       } catch (execError) {
         return Err({
+          type: "SCREENSHOT_ERROR" as const,
           message: "Failed to capture screenshot",
-          code: "SCREENSHOT_CAPTURE_FAILED",
+          code: "CAPTURE_FAILED",
           details: execError,
         });
       }
@@ -44,8 +48,9 @@ export class ScreenshotService {
       // Verify output file exists
       if (!existsSync(outputPath)) {
         return Err({
+          type: "SCREENSHOT_ERROR" as const,
           message: "Screenshot file was not created",
-          code: "SCREENSHOT_NOT_CREATED",
+          code: "CAPTURE_FAILED",
         });
       }
 
@@ -67,8 +72,9 @@ export class ScreenshotService {
       return Ok(result);
     } catch (error) {
       return Err({
+        type: "SCREENSHOT_ERROR" as const,
         message: "Unexpected error during screenshot capture",
-        code: "SCREENSHOT_ERROR",
+        code: "CAPTURE_FAILED",
         details: error,
       });
     }
@@ -80,9 +86,10 @@ export class ScreenshotService {
       return Ok.EMPTY;
     } catch {
       return Err({
-        message: "Invalid URL format",
+        type: "SCREENSHOT_ERROR",
         code: "INVALID_URL",
-      });
+        message: "Invalid URL format",
+      } as ScreenshotError);
     }
   }
 
@@ -139,8 +146,9 @@ export class ScreenshotService {
       return Ok.EMPTY;
     } catch (error) {
       return Err({
+        type: "SCREENSHOT_ERROR" as const,
         message: "Failed to cleanup screenshot file",
-        code: "CLEANUP_FAILED",
+        code: "CAPTURE_FAILED",
         details: error,
       });
     }

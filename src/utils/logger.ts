@@ -27,5 +27,25 @@ export function createLogger(options: LoggerOptions = {}): Logger {
   });
 }
 
+// Global logger instance that can be reconfigured
+let globalLogger: Logger | null = null;
+
+/**
+ * Get the global logger instance, creating it if necessary
+ */
+export function getGlobalLogger(): Logger {
+  if (!globalLogger) {
+    globalLogger = createLogger({ verbose: process.env.VERBOSE === "true" });
+  }
+  return globalLogger;
+}
+
+/**
+ * Configure the global logger with new options
+ */
+export function configureLogger(options: LoggerOptions): void {
+  globalLogger = createLogger(options);
+}
+
 // Export a default logger instance
-export const logger = createLogger({ verbose: process.env.LOG_LEVEL === "debug" });
+export const logger = getGlobalLogger();

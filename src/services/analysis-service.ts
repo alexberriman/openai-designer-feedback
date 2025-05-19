@@ -3,7 +3,7 @@ import type { AnalysisResult, AnalysisError, AnalysisOptions } from "../types/an
 import type { ScreenshotOptions } from "../types/screenshot.js";
 import { ScreenshotService } from "./screenshot-service.js";
 import { VisionService } from "./vision-service.js";
-import { logger } from "../utils/logger.js";
+import { getGlobalLogger } from "../utils/logger.js";
 import { rm } from "node:fs/promises";
 
 /**
@@ -12,6 +12,7 @@ import { rm } from "node:fs/promises";
 export class AnalysisService {
   private screenshotService: ScreenshotService;
   private visionService: VisionService;
+  private logger = getGlobalLogger();
 
   constructor(apiKey: string) {
     this.screenshotService = new ScreenshotService();
@@ -23,7 +24,8 @@ export class AnalysisService {
    */
   async analyzeWebsite(options: AnalysisOptions): Promise<Result<AnalysisResult, AnalysisError>> {
     const startTime = Date.now();
-    logger.info("Starting website analysis", { url: options.url, viewport: options.viewport });
+    this.logger.info("Starting website analysis", { url: options.url, viewport: options.viewport });
+    this.logger.debug("Analysis options", options);
 
     // Take screenshot
     const screenshotOptions: ScreenshotOptions = {
@@ -35,20 +37,21 @@ export class AnalysisService {
       fullPage: false,
     };
 
+    this.logger.debug("Capturing screenshot", screenshotOptions);
     const screenshotResult = await this.screenshotService.capture(screenshotOptions);
 
     if (screenshotResult.err) {
-      return Err({
-        type: "ANALYSIS_FAILED",
-        message: `Screenshot capture failed: ${screenshotResult.val.message}`,
-      });
+      this.logger.error("Screenshot capture failed", screenshotResult.val);
+      return Err(screenshotResult.val);
     }
 
     const screenshot = screenshotResult.val;
     const isTemporary = !options.outputPath;
+    this.logger.debug("Screenshot captured successfully", { path: screenshot.path, isTemporary });
 
     try {
       // Analyze screenshot with vision API
+      this.logger.debug("Starting vision analysis");
       const analysisResult = await this.visionService.analyzeScreenshot({
         imagePath: screenshot.path,
         viewport: options.viewport,
@@ -56,10 +59,12 @@ export class AnalysisService {
       });
 
       if (analysisResult.err) {
+        this.logger.error("Vision analysis failed", analysisResult.val);
         return Err(analysisResult.val);
       }
 
       const analysis = analysisResult.val;
+      this.logger.debug("Vision analysis completed successfully");
 
       // Add metadata
       const enrichedResult: AnalysisResult = {
@@ -69,7 +74,7 @@ export class AnalysisService {
         url: options.url,
       };
 
-      logger.info("Website analysis completed", {
+      this.logger.info("Website analysis completed", {
         duration: enrichedResult.analysisTime,
         url: options.url,
       });
@@ -80,9 +85,9 @@ export class AnalysisService {
       if (isTemporary) {
         try {
           await rm(screenshot.path);
-          logger.debug("Temporary screenshot cleaned up", { path: screenshot.path });
+          this.logger.debug("Temporary screenshot cleaned up", { path: screenshot.path });
         } catch (error) {
-          logger.warn("Failed to clean up temporary screenshot", {
+          this.logger.warn("Failed to clean up temporary screenshot", {
             path: screenshot.path,
             error,
           });

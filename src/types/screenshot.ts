@@ -21,8 +21,6 @@ export interface ScreenshotResult {
   base64?: string;
 }
 
-export interface ScreenshotError {
-  message: string;
-  code: string;
-  details?: unknown;
-}
+import type { ScreenshotError as BaseScreenshotError } from "./errors.js";
+
+export type ScreenshotError = BaseScreenshotError;

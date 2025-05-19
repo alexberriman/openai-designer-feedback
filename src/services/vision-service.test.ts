@@ -6,6 +6,14 @@ import OpenAI from "openai";
 // Mock modules
 vi.mock("node:fs/promises");
 vi.mock("openai");
+vi.mock("../utils/logger.js", () => ({
+  getGlobalLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  }),
+}));
 
 describe("VisionService", () => {
   let visionService: VisionService;
@@ -55,12 +63,12 @@ describe("VisionService", () => {
       if (result.ok) {
         expect(result.val.content).toContain("Critical issue");
         expect(result.val.viewport).toBe("mobile");
-        expect(result.val.model).toBe("gpt-4-vision-preview");
+        expect(result.val.model).toBe("gpt-image-1");
       }
 
       // Verify OpenAI was called with correct parameters
       expect(mockCreate).toHaveBeenCalledWith({
-        model: "gpt-4-vision-preview",
+        model: "gpt-image-1",
         messages: expect.arrayContaining([
           expect.objectContaining({
             role: "system",
@@ -86,7 +94,7 @@ describe("VisionService", () => {
 
       expect(result.err).toBe(true);
       if (result.err) {
-        expect(result.val.type).toBe("FILE_ERROR");
+        expect(result.val.type).toBe("FILE_SYSTEM_ERROR");
         expect(result.val.message).toContain("Failed to read image file");
       }
     });
@@ -123,7 +131,7 @@ describe("VisionService", () => {
         expect(result.val.type).toBe("API_ERROR");
         expect(result.val.message).toContain("OpenAI API error");
         if (result.val.type === "API_ERROR") {
-          expect(result.val.code).toBe(401);
+          expect(result.val.code).toBe("INVALID_KEY");
         }
       }
     });

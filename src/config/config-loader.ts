@@ -28,7 +28,8 @@ export async function loadConfig(
 
     if (!config.openaiApiKey) {
       return Err({
-        code: "NO_API_KEY",
+        type: "CONFIGURATION_ERROR",
+        code: "MISSING_API_KEY",
         message: "No OpenAI API key found in config file",
       });
     }
@@ -37,13 +38,15 @@ export async function loadConfig(
   } catch (error: unknown) {
     if ((error as Error & { code?: string }).code === "ENOENT") {
       return Err({
-        code: "CONFIG_NOT_FOUND",
+        type: "CONFIGURATION_ERROR",
+        code: "CONFIG_READ_ERROR",
         message: `Config file not found at ${configPath}`,
       });
     }
 
     return Err({
-      code: "INVALID_CONFIG",
+      type: "CONFIGURATION_ERROR",
+      code: "INVALID_CONFIG_FILE",
       message: `Failed to read config file: ${(error as Error).message}`,
     });
   }
@@ -60,7 +63,8 @@ export async function saveConfig(
     return Ok(undefined);
   } catch (error: unknown) {
     return Err({
-      code: "INVALID_CONFIG",
+      type: "CONFIGURATION_ERROR",
+      code: "INVALID_CONFIG_FILE",
       message: `Failed to save config: ${(error as Error).message}`,
     });
   }

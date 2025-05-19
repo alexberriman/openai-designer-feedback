@@ -3,6 +3,7 @@ import { Ok, Err } from "ts-results";
 import { validateConfig } from "./validator.js";
 import * as configLoader from "./config-loader.js";
 import * as prompt from "../utils/prompt.js";
+import type { ConfigurationError } from "../types/errors.js";
 
 vi.mock("./config-loader.js");
 vi.mock("../utils/prompt.js");
@@ -26,7 +27,8 @@ describe("validateConfig", () => {
   it("should prompt for API key when config not found", async () => {
     vi.mocked(configLoader.loadConfig).mockResolvedValue(
       Err({
-        code: "CONFIG_NOT_FOUND",
+        type: "CONFIGURATION_ERROR",
+        code: "CONFIG_READ_ERROR",
         message: "Config file not found",
       })
     );
@@ -47,7 +49,8 @@ describe("validateConfig", () => {
   it("should return error when prompt is cancelled", async () => {
     vi.mocked(configLoader.loadConfig).mockResolvedValue(
       Err({
-        code: "NO_API_KEY",
+        type: "CONFIGURATION_ERROR",
+        code: "MISSING_API_KEY",
         message: "No API key found",
       })
     );
@@ -63,7 +66,8 @@ describe("validateConfig", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.val).toEqual({
-        code: "NO_API_KEY",
+        type: "CONFIGURATION_ERROR",
+        code: "MISSING_API_KEY",
         message: "OpenAI API key is required to run this tool",
       });
     }
@@ -72,32 +76,35 @@ describe("validateConfig", () => {
   it("should return error when save fails", async () => {
     vi.mocked(configLoader.loadConfig).mockResolvedValue(
       Err({
-        code: "CONFIG_NOT_FOUND",
+        type: "CONFIGURATION_ERROR",
+        code: "CONFIG_READ_ERROR",
         message: "Config file not found",
       })
     );
     vi.mocked(prompt.promptForApiKey).mockResolvedValue(Ok("new-key"));
-    vi.mocked(configLoader.saveConfig).mockResolvedValue(
-      Err({
-        code: "INVALID_CONFIG",
-        message: "Save failed",
-      })
-    );
+    const saveError: ConfigurationError = {
+      type: "CONFIGURATION_ERROR",
+      code: "INVALID_CONFIG_FILE",
+      message: "Save failed",
+    };
+    vi.mocked(configLoader.saveConfig).mockResolvedValue(Err(saveError));
 
     const result = await validateConfig();
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.val).toEqual({
-        code: "INVALID_CONFIG",
+        type: "CONFIGURATION_ERROR",
+        code: "INVALID_CONFIG_FILE",
         message: "Save failed",
       });
     }
   });
 
   it("should pass through other errors unchanged", async () => {
-    const error = {
-      code: "INVALID_CONFIG" as const,
+    const error: ConfigurationError = {
+      type: "CONFIGURATION_ERROR",
+      code: "INVALID_CONFIG_FILE",
       message: "Invalid JSON",
     };
     vi.mocked(configLoader.loadConfig).mockResolvedValue(Err(error));

@@ -14,11 +14,9 @@ export interface AnalysisResult {
 /**
  * Error types for analysis operations
  */
-export type AnalysisError =
-  | { type: "API_ERROR"; message: string; code?: number }
-  | { type: "ANALYSIS_FAILED"; message: string }
-  | { type: "FILE_ERROR"; message: string }
-  | { type: "CONFIGURATION_ERROR"; message: string };
+import type { AppError } from "./errors.js";
+
+export type AnalysisError = AppError;
 
 /**
  * Options for performing analysis

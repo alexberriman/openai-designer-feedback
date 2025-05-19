@@ -10,12 +10,13 @@ import {
   validateQuality,
   validateFormat,
 } from "./utils/validator.js";
-import { createLogger } from "./utils/logger.js";
+import { configureLogger, getGlobalLogger } from "./utils/logger.js";
 import { ensureApiKey } from "./utils/config-loader.js";
 import { Result, Ok, Err } from "ts-results";
 import { AnalysisService } from "./services/analysis-service.js";
 import type { AnalysisOptions } from "./types/analysis.js";
 import { TextFormatter, JsonFormatter, writeOutputToFile } from "./utils/formatters/index.js";
+import { createUserFriendlyError, getExitCode, type AppError } from "./types/errors.js";
 
 const program = new Command();
 
@@ -35,14 +36,24 @@ program
   .option("--verbose", "Enable verbose logging")
   .option("--save <path>", "Save output to file")
   .action(async (url: string, options: CliOptions) => {
-    const logger = createLogger({ verbose: options.verbose });
+    // Configure logger with verbose mode if requested
+    configureLogger({ verbose: options.verbose });
+    const logger = getGlobalLogger();
+
+    logger.debug("Starting design feedback CLI", { url, options });
 
     try {
       // Validate all inputs
       const validations = await validateOptions(url, options);
       if (validations.err) {
-        logger.error(validations.val);
-        process.exit(1);
+        const validationError: AppError = {
+          type: "VALIDATION_ERROR",
+          code: "INVALID_OPTION",
+          message: validations.val,
+        };
+        logger.error("Validation failed", validationError);
+        console.error(chalk.red(createUserFriendlyError(validationError)));
+        process.exit(getExitCode(validationError));
       }
 
       const validatedOptions = validations.val;
@@ -51,8 +62,10 @@ program
       // Ensure we have an API key
       const apiKeyResult = await ensureApiKey(validatedOptions.apiKey);
       if (apiKeyResult.err) {
-        logger.error(`API key error: ${apiKeyResult.val.message}`);
-        process.exit(1);
+        const error = apiKeyResult.val as AppError;
+        logger.error("API key error", error);
+        console.error(chalk.red(createUserFriendlyError(error)));
+        process.exit(getExitCode(error));
       }
 
       // Perform analysis
@@ -69,8 +82,10 @@ program
 
       const analysisResult = await analysisService.analyzeWebsite(analysisOptions);
       if (analysisResult.err) {
-        logger.error(`Analysis error: ${analysisResult.val.message}`);
-        process.exit(1);
+        const error = analysisResult.val as AppError;
+        logger.error("Analysis error", error);
+        console.error(chalk.red(createUserFriendlyError(error)));
+        process.exit(getExitCode(error));
       }
 
       const analysis = analysisResult.val;
@@ -96,13 +111,21 @@ program
         if (saveResult.ok) {
           console.log(chalk.green(`\n✓ Output saved to: ${saveResult.val}`));
         } else {
-          logger.error(`Failed to save output: ${saveResult.val.message}`);
-          process.exit(1);
+          const error = saveResult.val as AppError;
+          logger.error("Failed to save output", error);
+          console.error(chalk.red(createUserFriendlyError(error)));
+          process.exit(getExitCode(error));
         }
       }
     } catch (error) {
       logger.error("Unexpected error", error);
-      process.exit(1);
+      const genericError: AppError = {
+        type: "ANALYSIS_ERROR",
+        code: "PROCESSING_FAILED",
+        message: error instanceof Error ? error.message : "An unexpected error occurred",
+      };
+      console.error(chalk.red(createUserFriendlyError(genericError)));
+      process.exit(getExitCode(genericError));
     }
   });
 

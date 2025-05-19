@@ -21,6 +21,12 @@ vi.mock("../utils/logger.js", () => ({
     error: vi.fn(),
     warn: vi.fn(),
   }),
+  getGlobalLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  }),
 }));
 
 describe("ScreenshotService", () => {
@@ -86,7 +92,7 @@ describe("ScreenshotService", () => {
 
       expect(result.err).toBe(true);
       if (result.err) {
-        expect(result.val.code).toBe("SCREENSHOT_NOT_CREATED");
+        expect(result.val.code).toBe("CAPTURE_FAILED");
       }
     });
 
@@ -166,7 +172,7 @@ describe("ScreenshotService", () => {
 
       expect(result.err).toBe(true);
       if (result.err) {
-        expect(result.val.code).toBe("CLEANUP_FAILED");
+        expect(result.val.code).toBe("CAPTURE_FAILED");
       }
     });
 

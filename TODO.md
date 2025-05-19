@@ -99,16 +99,16 @@ OpenAI Vision:
   ```
 - [x] Handle model selection and fallbacks
 
-## Phase 6: Analysis Service
+## Phase 6: Analysis Service ✅
 
-- [ ] Create service to send screenshots to OpenAI assistant
-- [ ] Implement proper message formatting:
-  - [ ] Include viewport/device context
-  - [ ] Set appropriate system prompts
-- [ ] Handle API response parsing
-- [ ] Implement retry logic for API failures
-- [ ] Add timeout handling
-- [ ] Return Result<AnalysisResult, AnalysisError>
+- [x] Create service to send screenshots to OpenAI assistant
+- [x] Implement proper message formatting:
+  - [x] Include viewport/device context
+  - [x] Set appropriate system prompts
+- [x] Handle API response parsing
+- [x] Implement retry logic for API failures
+- [x] Add timeout handling
+- [x] Return Result<AnalysisResult, AnalysisError>
 
 ## Phase 7: Output Formatting ✅
 
@@ -124,12 +124,12 @@ OpenAI Vision:
   - [x] Categorized issues
 - [x] Add option to save output to file
 
-## Phase 8: Error Handling & Logging
+## Phase 8: Error Handling & Logging ✅
 
-- [ ] Create error messages for user-friendly output
-- [ ] Add debug logging with Pino
-- [ ] Implement proper exit codes
-- [ ] Add verbose mode for troubleshooting
+- [x] Create error messages for user-friendly output
+- [x] Add debug logging with Pino
+- [x] Implement proper exit codes
+- [x] Add verbose mode for troubleshooting
 
 ## Phase 10: Documentation & Polish
 

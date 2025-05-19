@@ -12,7 +12,9 @@ export async function validateConfig(
     return configResult;
   }
 
-  if (configResult.val.code === "CONFIG_NOT_FOUND" || configResult.val.code === "NO_API_KEY") {
+  // Check if we need to prompt for API key
+  const errorCode = configResult.val.code;
+  if (errorCode === "CONFIG_READ_ERROR" || errorCode === "MISSING_API_KEY") {
     console.log("No OpenAI API key found.");
     console.log("You can provide it in one of the following ways:");
     console.log("1. Set the OPENAI_API_KEY environment variable");
@@ -24,7 +26,8 @@ export async function validateConfig(
 
     if (!promptResult.ok) {
       return Err({
-        code: "NO_API_KEY",
+        type: "CONFIGURATION_ERROR",
+        code: "MISSING_API_KEY",
         message: "OpenAI API key is required to run this tool",
       });
     }

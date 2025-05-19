@@ -69,7 +69,8 @@ describe("config-loader", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.val).toEqual({
-          code: "CONFIG_NOT_FOUND",
+          type: "CONFIGURATION_ERROR",
+          code: "CONFIG_READ_ERROR",
           message: `Config file not found at ${defaultConfigPath}`,
         });
       }
@@ -83,7 +84,8 @@ describe("config-loader", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.val).toEqual({
-          code: "NO_API_KEY",
+          type: "CONFIGURATION_ERROR",
+          code: "MISSING_API_KEY",
           message: "No OpenAI API key found in config file",
         });
       }
@@ -96,7 +98,7 @@ describe("config-loader", () => {
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.val.code).toBe("INVALID_CONFIG");
+        expect(result.val.code).toBe("INVALID_CONFIG_FILE");
       }
     });
   });
@@ -128,7 +130,8 @@ describe("config-loader", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.val).toEqual({
-          code: "INVALID_CONFIG",
+          type: "CONFIGURATION_ERROR",
+          code: "INVALID_CONFIG_FILE",
           message: "Failed to save config: Permission denied",
         });
       }

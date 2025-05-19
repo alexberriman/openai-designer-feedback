@@ -7,7 +7,6 @@ export interface ConfigOptions {
   configPath?: string;
 }
 
-export interface ConfigError {
-  code: "CONFIG_NOT_FOUND" | "INVALID_CONFIG" | "NO_API_KEY";
-  message: string;
-}
+import type { ConfigurationError } from "./errors.js";
+
+export type ConfigError = ConfigurationError;

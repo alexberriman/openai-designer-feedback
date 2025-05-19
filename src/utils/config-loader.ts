@@ -4,6 +4,7 @@ import path from "node:path";
 import { Err, Ok, Result } from "ts-results";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
+import type { ConfigurationError } from "../types/errors.js";
 
 export interface Config {
   openaiApiKey?: string;
@@ -16,7 +17,7 @@ interface NodeError extends Error {
 const CONFIG_DIR = path.join(homedir(), ".design-feedback");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
-export async function loadConfig(): Promise<Result<Config, Error>> {
+export async function loadConfig(): Promise<Result<Config, ConfigurationError>> {
   try {
     // Check environment variable first
     const envKey = process.env.OPENAI_API_KEY;
@@ -32,24 +33,36 @@ export async function loadConfig(): Promise<Result<Config, Error>> {
     } catch (error) {
       // Config file doesn't exist or is invalid
       if ((error as NodeError).code !== "ENOENT") {
-        return Err(new Error(`Failed to read config file: ${error}`));
+        return Err({
+          type: "CONFIGURATION_ERROR",
+          code: "CONFIG_READ_ERROR",
+          message: `Failed to read config file: ${error}`,
+        });
       }
     }
 
     // No config found
     return Ok({});
   } catch (error) {
-    return Err(new Error(`Failed to load config: ${error}`));
+    return Err({
+      type: "CONFIGURATION_ERROR",
+      code: "CONFIG_READ_ERROR",
+      message: `Failed to load config: ${error}`,
+    });
   }
 }
 
-export async function saveConfig(config: Config): Promise<Result<void, Error>> {
+export async function saveConfig(config: Config): Promise<Result<void, ConfigurationError>> {
   try {
     await fs.mkdir(CONFIG_DIR, { recursive: true });
     await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2));
     return Ok(undefined);
   } catch (error) {
-    return Err(new Error(`Failed to save config: ${error}`));
+    return Err({
+      type: "CONFIGURATION_ERROR",
+      code: "CONFIG_READ_ERROR",
+      message: `Failed to save config: ${error}`,
+    });
   }
 }
 
@@ -67,7 +80,9 @@ export async function promptForApiKey(): Promise<string> {
   });
 }
 
-export async function ensureApiKey(providedKey?: string): Promise<Result<string, Error>> {
+export async function ensureApiKey(
+  providedKey?: string
+): Promise<Result<string, ConfigurationError>> {
   if (providedKey) {
     return Ok(providedKey);
   }
@@ -85,7 +100,11 @@ export async function ensureApiKey(providedKey?: string): Promise<Result<string,
   // No API key found, prompt for it
   const apiKey = await promptForApiKey();
   if (!apiKey) {
-    return Err(new Error("API key is required"));
+    return Err({
+      type: "CONFIGURATION_ERROR",
+      code: "MISSING_API_KEY",
+      message: "API key is required",
+    });
   }
 
   // Save the API key for future use
