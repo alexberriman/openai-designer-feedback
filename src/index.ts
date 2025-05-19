@@ -13,8 +13,8 @@ import {
 import { createLogger } from "./utils/logger.js";
 import { ensureApiKey } from "./utils/config-loader.js";
 import { Result, Ok, Err } from "ts-results";
-import { ScreenshotService } from "./services/screenshot-service.js";
-import type { ScreenshotOptions } from "./types/screenshot.js";
+import { AnalysisService } from "./services/analysis-service.js";
+import type { AnalysisOptions } from "./types/analysis.js";
 
 const program = new Command();
 
@@ -53,32 +53,46 @@ program
         process.exit(1);
       }
 
-      // Take screenshot
-      logger.info("Taking screenshot...");
-      const screenshotService = new ScreenshotService();
-      const screenshotOptions: ScreenshotOptions = {
+      // Perform analysis
+      logger.info("Starting website analysis...");
+      const analysisService = new AnalysisService(apiKeyResult.val);
+      const analysisOptions: AnalysisOptions = {
         url: validatedOptions.url,
-        viewport: validatedOptions.viewport,
+        viewport: validatedOptions.viewport || "desktop",
+        apiKey: apiKeyResult.val,
+        outputFormat: validatedOptions.format,
         outputPath: validatedOptions.output,
-        waitTime: validatedOptions.wait,
-        waitFor: validatedOptions.waitFor,
-        fullPage: validatedOptions.fullPage,
-        quality: validatedOptions.quality,
+        verbose: validatedOptions.verbose,
       };
 
-      const screenshotResult = await screenshotService.capture(screenshotOptions);
-      if (screenshotResult.err) {
-        logger.error(`Screenshot error: ${screenshotResult.val.message}`);
+      const analysisResult = await analysisService.analyzeWebsite(analysisOptions);
+      if (analysisResult.err) {
+        logger.error(`Analysis error: ${analysisResult.val.message}`);
         process.exit(1);
       }
 
-      logger.info(`Screenshot saved to: ${screenshotResult.val.path}`);
-      logger.info("Screenshot metadata", screenshotResult.val.metadata);
+      const analysis = analysisResult.val;
 
-      // Implementation for analysis service will be added in Phase 5
-
-      console.log(chalk.green("✓ Screenshot captured successfully"));
-      console.log(chalk.blue(`📸 Screenshot: ${screenshotResult.val.path}`));
+      // Output results based on format
+      if (validatedOptions.format === "json") {
+        const jsonOutput = {
+          url: validatedOptions.url,
+          timestamp: analysis.timestamp,
+          viewport: analysis.viewport,
+          model: analysis.model,
+          analysisTime: analysis.analysisTime,
+          screenshotPath: analysis.screenshotPath,
+          feedback: analysis.content,
+        };
+        console.log(JSON.stringify(jsonOutput, null, 2));
+      } else {
+        console.log(chalk.green("\n✓ Analysis complete"));
+        console.log(chalk.blue("\n📊 Design Feedback:"));
+        console.log(chalk.white("\n" + analysis.content));
+        if (analysis.screenshotPath) {
+          console.log(chalk.gray(`\n📸 Screenshot: ${analysis.screenshotPath}`));
+        }
+      }
     } catch (error) {
       logger.error("Unexpected error", error);
       process.exit(1);
@@ -121,7 +135,7 @@ async function validateOptions(
 
   const validatedOptions: ValidatedOptions = {
     url: urlResult.val,
-    viewport: options.viewport,
+    viewport: viewportResult.val?.width + "x" + viewportResult.val?.height || "desktop",
     output: options.output,
     format: formatResult.val,
     wait: waitResult.val,

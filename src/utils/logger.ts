@@ -6,6 +6,14 @@ export interface LoggerOptions {
 }
 
 export function createLogger(options: LoggerOptions = {}): Logger {
+  const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+
+  if (isTest) {
+    return pino({
+      level: "silent",
+    });
+  }
+
   return pino({
     level: options.verbose ? "debug" : "info",
     transport: {
@@ -18,3 +26,6 @@ export function createLogger(options: LoggerOptions = {}): Logger {
     },
   });
 }
+
+// Export a default logger instance
+export const logger = createLogger({ verbose: process.env.LOG_LEVEL === "debug" });
