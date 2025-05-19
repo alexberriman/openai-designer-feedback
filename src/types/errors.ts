@@ -39,7 +39,7 @@ export interface ConfigurationError extends BaseError {
  */
 export interface ScreenshotError extends BaseError {
   type: "SCREENSHOT_ERROR";
-  code: "INVALID_URL" | "CAPTURE_FAILED" | "TOOL_NOT_FOUND" | "TIMEOUT";
+  code: "INVALID_URL" | "CAPTURE_FAILED" | "TOOL_NOT_FOUND" | "TIMEOUT" | "READ_ERROR";
 }
 
 /**
@@ -47,8 +47,15 @@ export interface ScreenshotError extends BaseError {
  */
 export interface ApiError extends BaseError {
   type: "API_ERROR";
-  code: "RATE_LIMIT" | "INVALID_KEY" | "SERVER_ERROR" | "NETWORK_ERROR";
+  code:
+    | "RATE_LIMIT"
+    | "INVALID_KEY"
+    | "SERVER_ERROR"
+    | "NETWORK_ERROR"
+    | "INVALID_IMAGE"
+    | "BAD_REQUEST";
   status?: number;
+  details?: string;
 }
 
 /**
@@ -78,6 +85,14 @@ export interface AnalysisError extends BaseError {
 }
 
 /**
+ * Network errors
+ */
+export interface NetworkError extends BaseError {
+  type: "NETWORK_ERROR";
+  code: "CONNECTION_ERROR" | "DNS_ERROR" | "TIMEOUT" | "SSL_ERROR" | "PROXY_ERROR";
+}
+
+/**
  * Union type of all application errors
  */
 export type AppError =
@@ -86,7 +101,8 @@ export type AppError =
   | ApiError
   | FileSystemError
   | ValidationError
-  | AnalysisError;
+  | AnalysisError
+  | NetworkError;
 
 /**
  * User-friendly error messages mapped by error type and code
@@ -111,9 +127,14 @@ export const ErrorMessages: Record<string, Record<string, string>> = {
   },
   API_ERROR: {
     RATE_LIMIT: "OpenAI API rate limit exceeded. Please wait a moment and try again.",
-    INVALID_KEY: "Invalid OpenAI API key. Please check your configuration.",
+    INVALID_KEY:
+      "Invalid OpenAI API key. Please check your configuration and ensure the key format is correct.",
     SERVER_ERROR: "OpenAI server error. The service might be temporarily unavailable.",
     NETWORK_ERROR: "Network error while calling OpenAI API. Please check your internet connection.",
+    INVALID_IMAGE:
+      "The image could not be processed by the OpenAI API. It may be too large, in an unsupported format, or corrupted.",
+    BAD_REQUEST:
+      "The request to OpenAI was invalid. Please check the command-line parameters and try again.",
   },
   FILE_SYSTEM_ERROR: {
     READ_ERROR: "Unable to read file. Please check the file exists and you have read permissions.",
@@ -135,28 +156,83 @@ export const ErrorMessages: Record<string, Record<string, string>> = {
     INVALID_RESPONSE: "Received invalid response from AI model. Please try again.",
     TIMEOUT: "Analysis timed out. The AI model took too long to respond.",
   },
+  NETWORK_ERROR: {
+    CONNECTION_ERROR:
+      "Failed to connect to the remote server. Please check your internet connection.",
+    DNS_ERROR: "Failed to resolve the domain name. Please check the URL and your DNS settings.",
+    TIMEOUT: "The network request timed out. The server took too long to respond.",
+    SSL_ERROR: "SSL/TLS error. Could not establish a secure connection.",
+    PROXY_ERROR: "Error connecting through proxy. Please check your proxy configuration.",
+  },
+};
+
+// Utility for formatting error messages
+const formatAdditionalDetails = (
+  error: AppError,
+  type: string,
+  field: string,
+  formatter: (value: string) => string
+): string | null => {
+  if (error.type === type && error[field as keyof AppError]) {
+    const value = error[field as keyof AppError];
+    if (value) {
+      return formatter(String(value));
+    }
+  }
+  return null;
+};
+
+// Extract and format details string
+const formatDetails = (details: unknown, maxLength = 300): string | null => {
+  if (details && typeof details === "string") {
+    return details.length > maxLength ? `${details.slice(0, Math.max(0, maxLength))}...` : details;
+  }
+  return null;
 };
 
 /**
  * Create a user-friendly error message from an error object
  */
 export function createUserFriendlyError(error: AppError): string {
-  const baseMessage = ErrorMessages[error.type]?.[error.code] ?? error.message;
+  // Base message from error type/code mappings or raw message
+  const baseMessage = ErrorMessages[error.type]?.[error.code as string] ?? error.message;
+  const parts = [baseMessage];
 
-  // Add additional context if available
-  if (error.type === "FILE_SYSTEM_ERROR" && error.path) {
-    return `${baseMessage}\nFile: ${error.path}`;
-  }
+  // Add file path for file system errors
+  const filePathInfo = formatAdditionalDetails(
+    error,
+    "FILE_SYSTEM_ERROR",
+    "path",
+    (path) => `File: ${path}`
+  );
+  if (filePathInfo) parts.push(filePathInfo);
 
-  if (error.type === "VALIDATION_ERROR" && error.field) {
-    return `${baseMessage}\nField: ${error.field}`;
-  }
+  // Add field info for validation errors
+  const fieldInfo = formatAdditionalDetails(
+    error,
+    "VALIDATION_ERROR",
+    "field",
+    (field) => `Field: ${field}`
+  );
+  if (fieldInfo) parts.push(fieldInfo);
 
+  // Add status code for API errors
   if (error.type === "API_ERROR" && error.status) {
-    return `${baseMessage}\nStatus code: ${error.status}`;
+    parts.push(`Status code: ${error.status}`);
   }
 
-  return baseMessage;
+  // Add network error type info
+  if (error.type === "NETWORK_ERROR" && error.code) {
+    parts.push(`Error type: ${error.code}`);
+  }
+
+  // Add error details if present
+  if (error.details && typeof error.details === "string") {
+    const detailsText = formatDetails(error.details);
+    if (detailsText) parts.push(`Details: ${detailsText}`);
+  }
+
+  return parts.join("\n");
 }
 
 /**
@@ -181,6 +257,9 @@ export function getExitCode(error: AppError): ExitCode {
     }
     case "ANALYSIS_ERROR": {
       return error.code === "TIMEOUT" ? ExitCode.TIMEOUT_ERROR : ExitCode.GENERAL_ERROR;
+    }
+    case "NETWORK_ERROR": {
+      return ExitCode.NETWORK_ERROR;
     }
     default: {
       return ExitCode.GENERAL_ERROR;

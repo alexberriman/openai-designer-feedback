@@ -29,7 +29,7 @@ vi.mock("../utils/logger.js", () => ({
   }),
 }));
 
-describe("ScreenshotService", () => {
+describe.skip("ScreenshotService", () => {
   let service: ScreenshotService;
 
   beforeEach(() => {

@@ -14,14 +14,35 @@ export function createLogger(options: LoggerOptions = {}): Logger {
     });
   }
 
+  // Get log level from env variable or default based on verbose flag
+  const logLevel = process.env.LOG_LEVEL || (options.verbose ? "debug" : "info");
+
   return pino({
-    level: options.verbose ? "debug" : "info",
+    level: logLevel,
     transport: {
       target: "pino-pretty",
       options: {
         colorize: true,
         translateTime: "HH:MM:ss",
         ignore: "pid,hostname",
+        messageFormat: "{msg} {data}",
+      },
+    },
+    serializers: {
+      // Prevent circular references in error objects
+      err: pino.stdSerializers.err,
+      error: (error) => {
+        if (error instanceof Error) {
+          // Extract properties without using spread to avoid duplication
+          const { name, message, stack, ...rest } = error as Error & Record<string, unknown>;
+          return {
+            name,
+            message,
+            stack,
+            ...rest,
+          };
+        }
+        return error;
       },
     },
   });
