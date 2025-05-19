@@ -6,7 +6,9 @@
     "**/*"
   ],
   "executions": [
-    "bun",
-    "npm"
+    "npm",
+    "npx",
+    "tsx",
+    "bun"
   ]
 }

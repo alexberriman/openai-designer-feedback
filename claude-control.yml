@@ -2,7 +2,7 @@ name: Design Feedback CLI
 description: A command-line tool that captures screenshots of websites and provides expert web design/UX feedback using OpenAI's vision API.
 
 # Project type
-project_type: "node"
+project_type: "bun"
 
 # Project brief/documentation
 project:
@@ -36,7 +36,7 @@ claude_md:
   skip_tech_guidelines: true
 
   # Explicitly define project category
-  project_category: "cli"
+  project_category: "fullstack"
 
   # Code style conventions for Claude.md
   code_style:
