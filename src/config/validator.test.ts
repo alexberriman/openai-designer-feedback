@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
 import { validateConfig } from "./validator.js";
 import * as configLoader from "./config-loader.js";
 import * as prompt from "../utils/prompt.js";

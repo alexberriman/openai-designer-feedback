@@ -10,7 +10,9 @@ import {
 } from "./utils/validator.js";
 import { configureLogger, getGlobalLogger } from "./utils/logger.js";
 import { ensureApiKey } from "./utils/config-loader.js";
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import { AnalysisService } from "./services/analysis-service.js";
 import type { AnalysisOptions } from "./types/analysis.js";
 import { TextFormatter, JsonFormatter, writeOutputToFile } from "./utils/formatters/index.js";

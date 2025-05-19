@@ -1,4 +1,6 @@
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import type { AnalysisResult, AnalysisError, AnalysisOptions } from "../types/analysis.js";
 import type { ScreenshotOptions } from "../types/screenshot.js";
 import { ScreenshotService } from "./screenshot-service.js";

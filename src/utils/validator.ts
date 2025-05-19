@@ -1,4 +1,6 @@
-import { Err, Ok, Result } from "ts-results";
+import tsResults from "ts-results";
+const { Err, Ok } = tsResults;
+import type { Result } from "ts-results";
 import type { ViewportDimensions, ViewportPreset } from "../types/cli.js";
 
 export interface ValidationError {

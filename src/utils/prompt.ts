@@ -1,5 +1,7 @@
 import readline from "node:readline";
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 
 export interface PromptError {
   code: "CANCELLED" | "INPUT_ERROR";

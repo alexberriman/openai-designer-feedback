@@ -1,6 +1,8 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import type { FormatterResult } from "./types.js";
 import { logger } from "../logger.js";
 

@@ -1,4 +1,6 @@
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import OpenAI from "openai";
 import { readFile } from "node:fs/promises";
 import type { AnalysisResult, AnalysisError } from "../types/analysis.js";

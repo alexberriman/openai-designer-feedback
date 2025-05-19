@@ -1,4 +1,6 @@
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import { loadConfig, saveConfig } from "./config-loader.js";
 import { promptForApiKey } from "../utils/prompt.js";
 import type { Config, ConfigError, ConfigOptions } from "../types/config.js";

@@ -1,7 +1,9 @@
 import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { Ok, Err, Result } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import type { Config, ConfigError, ConfigOptions } from "../types/config.js";
 
 const CONFIG_DIR = ".design-feedback";

@@ -1,7 +1,9 @@
 import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { Err, Ok, Result } from "ts-results";
+import tsResults from "ts-results";
+const { Err, Ok } = tsResults;
+import type { Result } from "ts-results";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
 import type { ConfigurationError } from "../types/errors.js";

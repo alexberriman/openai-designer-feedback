@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { readFile, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { Result, Ok, Err } from "ts-results";
+import tsResults from "ts-results";
+const { Ok, Err } = tsResults;
+import type { Result } from "ts-results";
 import type { ScreenshotOptions, ScreenshotResult, ScreenshotError } from "../types/screenshot.js";
 import { getGlobalLogger } from "../utils/logger.js";
 
