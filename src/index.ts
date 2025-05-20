@@ -37,7 +37,7 @@ program
   .option("--quality <number>", "JPEG quality (0-100)", "90")
   .option("--api-key <key>", "Override default OpenAI API key")
   .option("--verbose", "Enable verbose logging")
-  .option("--save <path>", "Save output to file")
+  .option("-s, --save <path>", "Save output to file")
   .action(async (url: string, options: CliOptions) => {
     // Configure logger with verbose mode if requested
     configureLogger({ verbose: options.verbose });
@@ -145,12 +145,14 @@ async function formatAndOutputResults(
 
   const formatted = formatter.format(analysis, formatterOptions);
 
-  // Output to console
-  console.log(formatted.content);
-
   // Save to file if requested
   if (options.save) {
     await saveToFile(formatted, options.save, logger);
+    // Print a confirmation message but not the content
+    console.log(chalk.green(`\n✓ Analysis saved to: ${options.save}`));
+  } else {
+    // Output to console only if not saving to file
+    console.log(formatted.content);
   }
 }
 
@@ -163,14 +165,13 @@ async function saveToFile(
   logger: ReturnType<typeof getGlobalLogger>
 ) {
   const saveResult = await writeOutputToFile(formatted, savePath);
-  if (saveResult.ok) {
-    console.log(chalk.green(`\n✓ Output saved to: ${saveResult.val}`));
-  } else {
+  if (!saveResult.ok) {
     const error = saveResult.val as AppError;
     logger.errorObject("Failed to save output", error);
     console.error(chalk.red(createUserFriendlyError(error)));
     process.exit(getExitCode(error));
   }
+  // Return silently on success - the caller will handle messaging
 }
 
 /**
@@ -240,6 +241,7 @@ async function validateOptions(
     quality: qualityResult.val,
     apiKey: options.apiKey,
     verbose: options.verbose,
+    save: options.save,
   };
 
   return Ok(validatedOptions);

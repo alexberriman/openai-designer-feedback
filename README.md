@@ -90,6 +90,7 @@ Options:
   -v, --viewport <size>       Viewport size (mobile/tablet/desktop/WIDTHxHEIGHT) (default: "desktop")
   -o, --output <path>         Save screenshot to specified path
   -f, --format <format>       Output format (json/text) (default: "text")
+  -s, --save <path>           Save analysis output to file instead of console
   -w, --wait <seconds>        Wait time before screenshot (seconds)
   --wait-for <selector>       Wait for specific CSS selector
   --full-page                 Capture full page (default: true)
@@ -127,9 +128,14 @@ npx @alexberriman/design-feedback https://example.com --output screenshot.png --
 npx @alexberriman/design-feedback https://spa-app.com --wait-for ".content-loaded" --wait 3
 ```
 
-#### Save Analysis to File
+#### Save Analysis to File (Redirection)
 ```bash
 npx @alexberriman/design-feedback https://example.com --format json > analysis.json
+```
+
+#### Save Analysis to File (Direct)
+```bash
+npx @alexberriman/design-feedback https://example.com --format json --save analysis.json
 ```
 
 ## Output Formats
@@ -231,7 +237,7 @@ npx @alexberriman/design-feedback https://spa-app.com \
 ### CI/CD Integration
 ```bash
 # In your CI pipeline
-npx @alexberriman/design-feedback $PREVIEW_URL --format json > design-review.json
+npx @alexberriman/design-feedback $PREVIEW_URL --format json --save design-review.json
 
 # Check for critical issues
 if grep -q '"severity": "critical"' design-review.json; then
