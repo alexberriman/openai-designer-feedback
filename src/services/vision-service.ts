@@ -47,7 +47,35 @@ export class VisionService {
     this.openai = new OpenAI({
       apiKey,
       httpAgent: this.createHttpAgent(),
+      maxRetries: this.maxRetries,
+      timeout: this.timeout,
     });
+  }
+
+  /**
+   * Clean up resources to allow proper process termination
+   */
+  public async destroy(): Promise<void> {
+    try {
+      // OpenAI doesn't have an official cleanup method, so we need to work around it
+
+      // For future OpenAI SDK versions that might add cleanup methods
+      const client = this.openai as unknown as { close?: () => Promise<void> };
+
+      if (client && typeof client.close === "function") {
+        await client.close();
+      }
+
+      // Force reference removal to allow garbage collection
+      // We need to null it out to release references immediately
+      this.openai = null as unknown as OpenAI;
+
+      this.logger.debug("VisionService resources cleaned up");
+    } catch (error) {
+      this.logger.warnObject("Error cleaning up VisionService", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private createHttpAgent() {

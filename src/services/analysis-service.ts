@@ -200,11 +200,22 @@ export class AnalysisService {
       }
 
       this.logger.debug("Vision analysis completed successfully");
-      return Ok(this.createEnrichedResult(result, screenshot.path, options.url, startTime));
+      const resultObj = this.createEnrichedResult(result, screenshot.path, options.url, startTime);
+      return Ok(resultObj);
     } finally {
-      // Clean up temporary screenshot if needed
-      if (isTemporary) {
-        await this.cleanupTemporaryFile(screenshot.path);
+      try {
+        // Clean up temporary screenshot if needed
+        if (isTemporary) {
+          await this.cleanupTemporaryFile(screenshot.path);
+        }
+
+        // Clean up OpenAI resources to allow proper termination
+        await this.visionService.destroy();
+        this.logger.debug("All resources cleaned up");
+      } catch (cleanupError) {
+        this.logger.warnObject("Error during cleanup", {
+          error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        });
       }
     }
   }
@@ -218,9 +229,12 @@ export class AnalysisService {
   ): Promise<Result<AnalysisResult, AnalysisError>> {
     this.logger.debug("Starting design recommendations analysis");
 
+    // Create a dedicated vision service for recommendations to avoid cleanup conflicts
+    const recommendationsService = new VisionService(options.apiKey);
+
     try {
-      // Call the design recommendations method from vision service
-      const result = await this.visionService.getDesignRecommendations({
+      // Call the design recommendations method from the dedicated vision service
+      const result = await recommendationsService.getDesignRecommendations({
         imagePath: screenshotPath,
         viewport: options.viewport,
         apiKey: options.apiKey,
@@ -244,6 +258,10 @@ export class AnalysisService {
         message: `Design recommendations analysis failed: ${error instanceof Error ? error.message : String(error)}`,
         details: error instanceof Error ? error.stack : undefined,
       } as AnalysisError);
+    } finally {
+      // Clean up the dedicated vision service
+      await recommendationsService.destroy();
+      this.logger.debug("Design recommendations service cleaned up");
     }
   }
 

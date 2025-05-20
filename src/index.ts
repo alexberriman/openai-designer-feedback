@@ -46,6 +46,40 @@ program
 
     logger.debugObject("Starting design feedback CLI", { url, options });
 
+    // Setup exit handling to ensure proper termination
+    const setupExitHandling = () => {
+      const exitHandler = (exitCode: number) => {
+        logger.debug(`Process exiting with code ${exitCode}`);
+
+        // Force immediate exit after cleanup attempt
+        // Use global setTimeout to force exit after a delay
+        globalThis
+          .setTimeout(() => {
+            logger.debug("Forcing exit after timeout");
+            process.exit(exitCode);
+          }, 500)
+          .unref();
+      };
+
+      // Handle normal exit
+      process.on("exit", exitHandler);
+
+      // Handle SIGINT (Ctrl+C)
+      process.on("SIGINT", () => {
+        logger.debug("Received SIGINT signal");
+        process.exit(0);
+      });
+
+      // Handle SIGTERM
+      process.on("SIGTERM", () => {
+        logger.debug("Received SIGTERM signal");
+        process.exit(0);
+      });
+    };
+
+    // Setup exit handlers
+    setupExitHandling();
+
     try {
       // Step 1: Validate inputs and get API key
       const { validatedOptions, apiKey } = await validateAndPrepare(url, options, logger);
@@ -55,6 +89,14 @@ program
 
       // Step 3: Format and output results
       await formatAndOutputResults(analysis, validatedOptions, logger);
+
+      // Explicitly signal that we're done, which helps Node.js clean up resources
+      logger.debug("Command completed successfully, freeing resources");
+
+      // Give Node.js a moment to clean up before exiting
+      if (options.verbose) {
+        console.error(chalk.gray("Command completed. Cleaning up resources..."));
+      }
     } catch (error) {
       handleUnexpectedError(error, logger);
     }
