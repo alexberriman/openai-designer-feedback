@@ -46,57 +46,43 @@ program
 
     logger.debugObject("Starting design feedback CLI", { url, options });
 
-    // Setup exit handling to ensure proper termination
-    const setupExitHandling = () => {
-      const exitHandler = (exitCode: number) => {
-        logger.debug(`Process exiting with code ${exitCode}`);
+    // Setup simple signal handlers for clean termination
+    process.on("SIGINT", () => {
+      logger.debug("Received SIGINT signal - terminating");
+      exitWithTimeout(0, "SIGINT signal", logger);
+    });
 
-        // Force immediate exit after cleanup attempt
-        // Use global setTimeout to force exit after a delay
-        globalThis
-          .setTimeout(() => {
-            logger.debug("Forcing exit after timeout");
-            process.exit(exitCode);
-          }, 500)
-          .unref();
-      };
-
-      // Handle normal exit
-      process.on("exit", exitHandler);
-
-      // Handle SIGINT (Ctrl+C)
-      process.on("SIGINT", () => {
-        logger.debug("Received SIGINT signal");
-        process.exit(0);
-      });
-
-      // Handle SIGTERM
-      process.on("SIGTERM", () => {
-        logger.debug("Received SIGTERM signal");
-        process.exit(0);
-      });
-    };
-
-    // Setup exit handlers
-    setupExitHandling();
+    process.on("SIGTERM", () => {
+      logger.debug("Received SIGTERM signal - terminating");
+      exitWithTimeout(0, "SIGTERM signal", logger);
+    });
 
     try {
       // Step 1: Validate inputs and get API key
-      const { validatedOptions, apiKey } = await validateAndPrepare(url, options, logger);
+      const prepResult = await validateAndPrepare(url, options, logger);
+      // If undefined, validation failed and error handling has already executed
+      if (!prepResult) return;
+
+      const { validatedOptions, apiKey } = prepResult;
 
       // Step 2: Perform analysis
       const analysis = await runAnalysis(validatedOptions, apiKey, logger);
+      // If undefined, analysis failed and error handling has already executed
+      if (!analysis) return;
 
       // Step 3: Format and output results
       await formatAndOutputResults(analysis, validatedOptions, logger);
 
-      // Explicitly signal that we're done, which helps Node.js clean up resources
+      // Explicitly signal that we're done
       logger.debug("Command completed successfully, freeing resources");
 
-      // Give Node.js a moment to clean up before exiting
+      // Show completion message if verbose
       if (options.verbose) {
-        console.error(chalk.gray("Command completed. Cleaning up resources..."));
+        console.error(chalk.gray("Command completed. Exiting..."));
       }
+
+      // Use our helper to exit cleanly with a timeout
+      exitWithTimeout(0, "successful completion", logger);
     } catch (error) {
       handleUnexpectedError(error, logger);
     }
@@ -120,7 +106,12 @@ async function validateAndPrepare(
     };
     logger.errorObject("Validation failed", validationError);
     console.error(chalk.red(createUserFriendlyError(validationError)));
-    process.exit(getExitCode(validationError));
+
+    // Get the exit code and use our helper to exit cleanly
+    const exitCode = getExitCode(validationError);
+    exitWithTimeout(exitCode, "validation error", logger);
+    // Exit early, allowing the timeout to work
+    return;
   }
 
   const validatedOptions = validations.val;
@@ -132,7 +123,12 @@ async function validateAndPrepare(
     const error = apiKeyResult.val as AppError;
     logger.errorObject("API key error", error);
     console.error(chalk.red(createUserFriendlyError(error)));
-    process.exit(getExitCode(error));
+
+    // Get the exit code and use our helper to exit cleanly
+    const exitCode = getExitCode(error);
+    exitWithTimeout(exitCode, "API key error", logger);
+    // Exit early, allowing the timeout to work
+    return;
   }
 
   return { validatedOptions, apiKey: apiKeyResult.val };
@@ -164,7 +160,12 @@ async function runAnalysis(
     const error = analysisResult.val as AppError;
     logger.errorObject("Analysis error", error);
     console.error(chalk.red(createUserFriendlyError(error)));
-    process.exit(getExitCode(error));
+
+    // Get the exit code and use our helper to exit cleanly
+    const exitCode = getExitCode(error);
+    exitWithTimeout(exitCode, "analysis error", logger);
+    // Exit early, allowing the timeout to work
+    return;
   }
 
   return analysisResult.val;
@@ -213,9 +214,103 @@ async function saveToFile(
     const error = saveResult.val as AppError;
     logger.errorObject("Failed to save output", error);
     console.error(chalk.red(createUserFriendlyError(error)));
-    process.exit(getExitCode(error));
+
+    // Get the exit code and use our helper to exit cleanly
+    const exitCode = getExitCode(error);
+    exitWithTimeout(exitCode, "file save error", logger);
+    // Exit early, allowing the timeout to work
   }
   // Return silently on success - the caller will handle messaging
+}
+
+/**
+ * Attempt to close a Node.js handle (socket, timer, etc.)
+ */
+function tryCloseHandle(
+  handle: unknown,
+  index: number,
+  reason: string,
+  logger: ReturnType<typeof getGlobalLogger>
+): void {
+  try {
+    // We need to check dynamically if the handle has a close method
+    type HandleWithClose = { close: () => void };
+
+    // Handle sockets/servers/etc that have a close method
+    if (handle && typeof (handle as { close?: () => void }).close === "function") {
+      (handle as HandleWithClose).close();
+      logger.debug(`${reason}: Closed handle ${index}`);
+    }
+
+    // Handle timers that can be cleared
+    if (handle && typeof (handle as { unref?: () => void }).unref === "function") {
+      (handle as { unref: () => void }).unref();
+      logger.debug(`${reason}: Unref'd handle ${index}`);
+    }
+  } catch (handleError) {
+    logger.debug(`${reason}: Error closing handle ${index}: ${String(handleError)}`);
+  }
+}
+
+/**
+ * Attempt to close all active handles to allow clean exit
+ */
+function closeActiveHandles(reason: string, logger: ReturnType<typeof getGlobalLogger>): void {
+  try {
+    // Use process._getActiveHandles which is an internal Node.js API that's not in the typings
+    // but is available at runtime for debugging purposes
+    const nodeProcess = process as unknown as { _getActiveHandles?: () => unknown[] };
+    const handles = nodeProcess._getActiveHandles?.();
+
+    if (handles && Array.isArray(handles)) {
+      logger.debug(`${reason}: Found ${handles.length} active handles, attempting to close them`);
+
+      for (const [i, handle] of handles.entries()) {
+        tryCloseHandle(handle, i, reason, logger);
+      }
+    }
+  } catch (handleError) {
+    logger.debug(`${reason}: Error cleaning up handles: ${String(handleError)}`);
+  }
+}
+
+/**
+ * Exit the process with a timeout fallback to ensure we don't hang
+ * This addresses the issue where the OpenAI client keeps the process alive
+ */
+function exitWithTimeout(
+  exitCode: number,
+  reason: string,
+  logger: ReturnType<typeof getGlobalLogger>,
+  timeoutMs: number = 500
+): void {
+  logger.debug(`Preparing to exit with code ${exitCode} due to ${reason}`);
+
+  // First try a graceful exit with a short timeout
+  logger.debug(`Setting a failsafe exit timeout of ${timeoutMs}ms for ${reason}`);
+
+  // Set a timer to force exit if cleanup doesn't complete in time
+  const exitTimeoutId = globalThis.setTimeout(() => {
+    logger.debug(`${reason}: Exit timeout of ${timeoutMs}ms reached, forcing immediate exit`);
+    process.exit(exitCode);
+  }, timeoutMs);
+
+  // Keeping the timeout reference unref'd allows Node to exit naturally
+  // if all other handles are closed before timeout triggers
+  exitTimeoutId.unref();
+
+  // Close any handles that might be keeping the event loop running
+  closeActiveHandles(reason, logger);
+
+  // Try to give the process a small chance to exit naturally
+  // This can happen if our cleanup allowed event loop to empty
+  logger.debug(`${reason}: Waiting for natural exit or timeout (code: ${exitCode})`);
+
+  // This is a last resort - if we reach this point, the process will exit
+  // after the timeout we set above
+  process.on("exit", (code) => {
+    logger.debug(`Process exiting with code ${code}`);
+  });
 }
 
 /**
@@ -237,7 +332,10 @@ function handleUnexpectedError(error: unknown, logger: ReturnType<typeof getGlob
     message: error instanceof Error ? error.message : "An unexpected error occurred",
   };
   console.error(chalk.red(createUserFriendlyError(genericError)));
-  process.exit(getExitCode(genericError));
+
+  // Get the exit code and use our helper to exit cleanly
+  const exitCode = getExitCode(genericError);
+  exitWithTimeout(exitCode, "unexpected error", logger);
 }
 
 async function validateOptions(

@@ -28,6 +28,35 @@ type OpenAIRequestPayload = {
 };
 
 /**
+ * Types for accessing internal OpenAI client properties
+ */
+interface Connection {
+  close?: () => void;
+}
+
+interface Agent {
+  destroy?: () => void;
+}
+
+interface Dispatcher {
+  connections?: Record<string, Connection>;
+  agent?: Agent;
+}
+
+interface FetchClient {
+  dispatcher?: Dispatcher;
+}
+
+interface BaseClient {
+  fetch?: FetchClient;
+}
+
+interface OpenAIWithClose extends OpenAI {
+  close?: () => Promise<void>;
+  baseClient?: BaseClient;
+}
+
+/**
  * Service for analyzing screenshots using OpenAI's gpt-image-1 vision model
  */
 export class VisionService {
@@ -53,22 +82,113 @@ export class VisionService {
   }
 
   /**
-   * Clean up resources to allow proper process termination
+   * Try to close built-in client implementation if available
    */
-  public async destroy(): Promise<void> {
+  private async tryCloseClient(): Promise<void> {
     try {
-      // OpenAI doesn't have an official cleanup method, so we need to work around it
-
-      // For future OpenAI SDK versions that might add cleanup methods
-      const client = this.openai as unknown as { close?: () => Promise<void> };
+      const client = this.openai as OpenAIWithClose;
 
       if (client && typeof client.close === "function") {
         await client.close();
+        this.logger.debug("Successfully closed OpenAI client via close() method");
       }
+    } catch (error) {
+      this.logger.debug(`Error closing client: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Try to close any connections in the fetch client
+   */
+  private tryCloseConnections(fetchClient: FetchClient): void {
+    if (!fetchClient.dispatcher?.connections) return;
+
+    this.logger.debug("Found connections in fetch dispatcher, closing");
+    try {
+      for (const conn of Object.values(fetchClient.dispatcher.connections)) {
+        if (typeof conn.close === "function") {
+          conn.close();
+          this.logger.debug("Closed a connection");
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`Error closing connections: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Try to destroy the HTTP agent if it exists
+   */
+  private tryDestroyAgent(fetchClient: FetchClient): void {
+    if (!fetchClient.dispatcher?.agent?.destroy) return;
+
+    this.logger.debug("Found agent in fetch dispatcher, destroying");
+    try {
+      fetchClient.dispatcher.agent.destroy();
+      this.logger.debug("Destroyed fetch agent");
+    } catch (error) {
+      this.logger.debug(`Error destroying agent: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Try to clean up the fetch client and its resources
+   */
+  private tryCleanupFetchClient(): void {
+    try {
+      const client = this.openai as OpenAIWithClose;
+      const fetchClient = client?.baseClient?.fetch;
+
+      if (fetchClient) {
+        this.logger.debug("Found OpenAI internal fetch client, attempting to clean up");
+
+        // Try to close connections
+        this.tryCloseConnections(fetchClient);
+
+        // Try to destroy the agent
+        this.tryDestroyAgent(fetchClient);
+      }
+    } catch (error) {
+      this.logger.debug(`Failed to clean up fetch client: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Try to force garbage collection if available
+   */
+  private tryForceGarbageCollection(): void {
+    // Only works if Node is started with --expose-gc flag
+    const nodeProcess = globalThis as unknown as { gc?: () => void };
+    if (!nodeProcess.gc) return;
+
+    try {
+      nodeProcess.gc();
+      this.logger.debug("Manually triggered garbage collection");
+    } catch (error) {
+      this.logger.debug(`Error triggering garbage collection: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Clean up resources to allow proper process termination
+   * This method handles cleaning up the OpenAI client to prevent process hanging
+   * @returns Promise that resolves when cleanup is complete
+   */
+  public async destroy(): Promise<void> {
+    try {
+      this.logger.debug("Starting VisionService cleanup...");
+
+      // Try to close client if it has a close method
+      await this.tryCloseClient();
+
+      // Try to clean up fetch client and HTTP resources
+      this.tryCleanupFetchClient();
 
       // Force reference removal to allow garbage collection
-      // We need to null it out to release references immediately
       this.openai = null as unknown as OpenAI;
+
+      // Try to force garbage collection
+      this.tryForceGarbageCollection();
 
       this.logger.debug("VisionService resources cleaned up");
     } catch (error) {
