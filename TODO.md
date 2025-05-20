@@ -130,6 +130,7 @@ OpenAI Vision:
 - [x] Add debug logging with Pino
 - [x] Implement proper exit codes
 - [x] Add verbose mode for troubleshooting
+- [x] Fix debug logging issue - logger was showing debug logs even without LOG_LEVEL or VERBOSE flags
 
 ## Phase 10: Documentation & Polish ✅
 

@@ -65,7 +65,7 @@ export interface EnhancedLogger extends Logger {
 export function getGlobalLogger(): EnhancedLogger {
   if (!globalLogger) {
     globalLogger = createLogger({
-      verbose: process.env.VERBOSE === "true" || process.env.LOG_LEVEL === "debug",
+      verbose: process.env.VERBOSE === "true",
     });
   }
 
