@@ -15,7 +15,7 @@ export function createLogger(options: LoggerOptions = {}): Logger {
   }
 
   // Get log level from env variable or default based on verbose flag
-  const logLevel = process.env.LOG_LEVEL || (options.verbose ? "debug" : "info");
+  const logLevel = process.env.LOG_LEVEL || (options.verbose ? "debug" : "warn");
 
   return pino({
     level: logLevel,
