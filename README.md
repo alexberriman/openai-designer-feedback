@@ -1,5 +1,7 @@
 # Design Feedback CLI
 
+[![CI](https://github.com/alexberriman/openai-designer-feedback/actions/workflows/ci.yml/badge.svg)](https://github.com/alexberriman/openai-designer-feedback/actions/workflows/ci.yml)
+
 A powerful CLI tool that captures screenshots of websites and provides professional web design/UX feedback using AI vision analysis. Perfect for quickly identifying critical design issues, errors, and UX problems in web applications.
 
 ## Features
