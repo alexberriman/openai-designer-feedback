@@ -72,13 +72,30 @@ export class JsonFormatter implements OutputFormatter {
       }
     }
 
-    // If no structured issues found, create one from the content
+    // If no structured issues found, create one from the content but ONLY if it's not indicating no issues
     if (issues.length === 0 && content.trim()) {
-      issues.push({
-        severity: "major",
-        category: "General",
-        description: content.trim(),
-      });
+      const trimmedContent = content.trim();
+
+      // Don't add an issue if the content indicates there are no issues
+      const noIssuesIndicators = [
+        "no critical layout issues found",
+        "no issues found",
+        "no layout issues",
+        "no visual issues",
+        "no problems detected",
+      ];
+
+      const hasNoIssuesIndicator = noIssuesIndicators.some((indicator) =>
+        trimmedContent.toLowerCase().includes(indicator.toLowerCase())
+      );
+
+      if (!hasNoIssuesIndicator) {
+        issues.push({
+          severity: "major",
+          category: "General",
+          description: trimmedContent,
+        });
+      }
     }
 
     return issues;
@@ -104,6 +121,24 @@ export class JsonFormatter implements OutputFormatter {
   }
 
   private extractSummary(content: string): string {
+    // First, check if the content is a "no issues" response
+    const noIssuesIndicators = [
+      "no critical layout issues found",
+      "no issues found",
+      "no layout issues",
+      "no visual issues",
+      "no problems detected",
+    ];
+
+    const trimmedContent = content.trim();
+    const hasNoIssuesIndicator = noIssuesIndicators.some((indicator) =>
+      trimmedContent.toLowerCase().includes(indicator.toLowerCase())
+    );
+
+    if (hasNoIssuesIndicator) {
+      return trimmedContent;
+    }
+
     // Look for an overall assessment or summary section
     const lines = content.split("\n");
     const summaryIndex = lines.findIndex(

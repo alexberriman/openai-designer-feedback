@@ -93,4 +93,43 @@ describe("JsonFormatter", () => {
 
     expect(parsed.summary).toBe("The website needs major improvements to be usable.");
   });
+
+  it("should not include 'no issues' messages as issues", () => {
+    const result: AnalysisResult = {
+      content: "No critical layout issues found in this screenshot.",
+      timestamp: "2023-01-01T00:00:00Z",
+      viewport: "desktop",
+      model: "gpt-4.1-2025-04-14",
+    };
+
+    const formatted = formatter.format(result);
+    const parsed = JSON.parse(formatted.content);
+
+    expect(parsed.issues).toHaveLength(0);
+    expect(parsed.summary).toBe("No critical layout issues found in this screenshot.");
+  });
+
+  it("should not include variations of 'no issues' messages as issues", () => {
+    const noIssuesVariations = [
+      "No issues found in the screenshot.",
+      "No layout issues detected on this page.",
+      "No visual issues in the current viewport.",
+      "No problems detected with the site layout.",
+    ];
+
+    for (const content of noIssuesVariations) {
+      const result: AnalysisResult = {
+        content,
+        timestamp: "2023-01-01T00:00:00Z",
+        viewport: "desktop",
+        model: "gpt-4.1-2025-04-14",
+      };
+
+      const formatted = formatter.format(result);
+      const parsed = JSON.parse(formatted.content);
+
+      expect(parsed.issues).toHaveLength(0);
+      expect(parsed.summary).toBe(content);
+    }
+  });
 });

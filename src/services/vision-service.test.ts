@@ -76,7 +76,7 @@ describe("VisionService", () => {
         messages: expect.arrayContaining([
           expect.objectContaining({
             role: "system",
-            content: expect.stringContaining("experienced web designer"),
+            content: expect.stringContaining("strict, highly pragmatic web design QA tool"),
           }),
         ]),
         max_tokens: 1000,
