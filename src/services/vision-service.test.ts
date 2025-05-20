@@ -12,6 +12,10 @@ vi.mock("../utils/logger.js", () => ({
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
+    debugObject: vi.fn(),
+    infoObject: vi.fn(),
+    errorObject: vi.fn(),
+    warnObject: vi.fn(),
   }),
 }));
 
@@ -68,7 +72,7 @@ describe("VisionService", () => {
 
       // Verify OpenAI was called with correct parameters
       expect(mockCreate).toHaveBeenCalledWith({
-        model: "gpt-4o", // Updated model name
+        model: "gpt-4.1", // Match the actual model used in the implementation
         messages: expect.arrayContaining([
           expect.objectContaining({
             role: "system",

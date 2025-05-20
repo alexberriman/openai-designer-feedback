@@ -50,7 +50,7 @@ export class ScreenshotService {
    * Log capture starting information
    */
   private logCaptureStart(options: ScreenshotOptions): void {
-    this.logger.debug("Starting screenshot capture", {
+    this.logger.debugObject("Starting screenshot capture", {
       url: options.url,
       viewport: options.viewport,
       waitTime: options.waitTime,
@@ -65,7 +65,7 @@ export class ScreenshotService {
    * Log URL validation error
    */
   private logUrlValidationError(url: string, error: ScreenshotError): void {
-    this.logger.error("URL validation failed", {
+    this.logger.errorObject("URL validation failed", {
       url,
       error: error.message,
       code: error.code,
@@ -76,7 +76,7 @@ export class ScreenshotService {
    * Log output path information
    */
   private logOutputPath(outputPath: string, providedByUser: boolean): void {
-    this.logger.debug("Using output path", {
+    this.logger.debugObject("Using output path", {
       outputPath,
       isTemporary: !providedByUser,
       directory: path.dirname(outputPath),
@@ -92,12 +92,12 @@ export class ScreenshotService {
     outputPath: string
   ): Promise<Result<void, ScreenshotError>> {
     const command = this.buildCommand(options, outputPath);
-    this.logger.debug("Screenshotter command", {
+    this.logger.debugObject("Screenshotter command", {
       command,
       commandLength: command.length,
     });
 
-    this.logger.debug("Executing screenshotter command", {
+    this.logger.debugObject("Executing screenshotter command", {
       startTime: new Date().toISOString(),
       workingDirectory: process.cwd(),
     });
@@ -107,7 +107,7 @@ export class ScreenshotService {
       const execResult = await execAsync(command);
       const duration = Date.now() - startTime;
 
-      this.logger.debug("Screenshotter command completed", {
+      this.logger.debugObject("Screenshotter command completed", {
         duration: `${duration}ms`,
         stdout: execResult.stdout.slice(0, 200) + (execResult.stdout.length > 200 ? "..." : ""),
         stderr: execResult.stderr.slice(0, 200) + (execResult.stderr.length > 200 ? "..." : ""),
@@ -130,7 +130,7 @@ export class ScreenshotService {
     error: Error & { stdout?: string; stderr?: string; code?: number },
     command: string
   ): Result<void, ScreenshotError> {
-    this.logger.error("Screenshotter command failed", {
+    this.logger.errorObject("Screenshotter command failed", {
       error: error.message,
       stdout:
         error.stdout?.slice(0, 200) + (error.stdout && error.stdout.length > 200 ? "..." : ""),
@@ -161,7 +161,7 @@ export class ScreenshotService {
   ): Promise<Result<ScreenshotResult, ScreenshotError>> {
     // Verify output file exists
     const fileExists = existsSync(outputPath);
-    this.logger.debug("Checking screenshot file", {
+    this.logger.debugObject("Checking screenshot file", {
       path: outputPath,
       exists: fileExists,
     });
@@ -182,7 +182,7 @@ export class ScreenshotService {
    * Handle missing file error
    */
   private handleMissingFile(outputPath: string): Result<ScreenshotResult, ScreenshotError> {
-    this.logger.error("Screenshot file not created", {
+    this.logger.errorObject("Screenshot file not created", {
       path: outputPath,
       directory: path.dirname(outputPath),
       directoryExists: existsSync(path.dirname(outputPath)),
@@ -213,10 +213,10 @@ export class ScreenshotService {
         exists: false,
       }));
 
-    this.logger.debug("Screenshot file stats", fileStats);
+    this.logger.debugObject("Screenshot file stats", fileStats);
 
     const base64 = await this.encodeToBase64(outputPath);
-    this.logger.debug("Image encoded to base64", {
+    this.logger.debugObject("Image encoded to base64", {
       base64Length: base64.length,
       encodedSizeKB: Math.round(base64.length / 1024),
     });
@@ -232,7 +232,7 @@ export class ScreenshotService {
       base64,
     };
 
-    this.logger.info("Screenshot captured successfully", {
+    this.logger.infoObject("Screenshot captured successfully", {
       path: outputPath,
       sizeKB: Math.round((base64.length * 0.75) / 1024), // Approximate size of decoded image
       format: result.metadata.format,
@@ -249,7 +249,7 @@ export class ScreenshotService {
     outputPath: string,
     fileError: unknown
   ): Result<ScreenshotResult, ScreenshotError> {
-    this.logger.error("Failed to process screenshot file", {
+    this.logger.errorObject("Failed to process screenshot file", {
       path: outputPath,
       error: fileError instanceof Error ? fileError.message : String(fileError),
     });
@@ -266,7 +266,7 @@ export class ScreenshotService {
    * Handle unexpected errors
    */
   private handleUnexpectedError(error: unknown): Result<ScreenshotResult, ScreenshotError> {
-    this.logger.error("Unexpected error during screenshot capture", {
+    this.logger.errorObject("Unexpected error during screenshot capture", {
       error:
         error instanceof Error
           ? {
@@ -335,12 +335,12 @@ export class ScreenshotService {
 
   private async encodeToBase64(filePath: string): Promise<string> {
     try {
-      this.logger.debug("Reading file for base64 encoding", { filePath });
+      this.logger.debugObject("Reading file for base64 encoding", { filePath });
       const startTime = Date.now();
       const buffer = await readFile(filePath);
       const duration = Date.now() - startTime;
 
-      this.logger.debug("File read for base64 encoding", {
+      this.logger.debugObject("File read for base64 encoding", {
         filePath,
         sizeBytes: buffer.length,
         readDuration: `${duration}ms`,
@@ -348,7 +348,7 @@ export class ScreenshotService {
 
       const base64 = buffer.toString("base64");
 
-      this.logger.debug("Base64 encoding complete", {
+      this.logger.debugObject("Base64 encoding complete", {
         filePath,
         originalSizeBytes: buffer.length,
         encodedLength: base64.length,
@@ -357,7 +357,7 @@ export class ScreenshotService {
 
       return base64;
     } catch (error) {
-      this.logger.error("Failed to encode file to base64", {
+      this.logger.errorObject("Failed to encode file to base64", {
         filePath,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -373,7 +373,7 @@ export class ScreenshotService {
     try {
       if (existsSync(filePath)) {
         await unlink(filePath);
-        this.logger.debug("Cleaned up screenshot file", { path: filePath });
+        this.logger.debugObject("Cleaned up screenshot file", { path: filePath });
       }
       return Ok.EMPTY;
     } catch (error) {

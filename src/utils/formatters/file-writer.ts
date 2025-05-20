@@ -31,10 +31,10 @@ export async function writeOutputToFile(
     // Write content to file
     await writeFile(outputPath, result.content, "utf8");
 
-    logger.debug("Output written to file", { path: outputPath });
+    logger.debugObject("Output written to file", { path: outputPath });
     return Ok(outputPath);
   } catch (error) {
-    logger.error("Failed to write output to file", { error, path: outputPath });
+    logger.errorObject("Failed to write output to file", { error, path: outputPath });
 
     const fsError = error as FileSystemError;
     return Err({

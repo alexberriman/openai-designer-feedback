@@ -28,18 +28,18 @@ export class AnalysisService {
    * Log analysis start information
    */
   private logAnalysisStart(options: AnalysisOptions): void {
-    this.logger.info("Starting website analysis", {
+    this.logger.infoObject("Starting website analysis", {
       url: options.url,
       viewport: options.viewport,
     });
 
-    this.logger.debug("Analysis options", options);
+    this.logger.debugObject("Analysis options", options);
 
     const apiKeyType = options.apiKey.startsWith("sk-proj-")
       ? "Project-scoped key"
       : "Standard API key";
 
-    this.logger.debug("Analysis run details", {
+    this.logger.debugObject("Analysis run details", {
       timestamp: new Date().toISOString(),
       url: options.url,
       viewport: options.viewport,
@@ -80,7 +80,7 @@ export class AnalysisService {
       });
     } catch (error) {
       // Log critical errors properly
-      this.logger.error("Critical error in vision service", {
+      this.logger.errorObject("Critical error in vision service", {
         errorType: error instanceof Error ? error.constructor.name : typeof error,
         errorMessage: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : "No stack trace",
@@ -102,9 +102,9 @@ export class AnalysisService {
   private async cleanupTemporaryFile(path: string): Promise<void> {
     try {
       await rm(path);
-      this.logger.debug("Temporary screenshot cleaned up", { path });
+      this.logger.debugObject("Temporary screenshot cleaned up", { path });
     } catch (error) {
-      this.logger.warn("Failed to clean up temporary screenshot", {
+      this.logger.warnObject("Failed to clean up temporary screenshot", {
         path,
         error,
       });
@@ -127,7 +127,7 @@ export class AnalysisService {
       url,
     };
 
-    this.logger.info("Website analysis completed", {
+    this.logger.infoObject("Website analysis completed", {
       duration: enrichedResult.analysisTime,
       url,
     });
@@ -144,17 +144,17 @@ export class AnalysisService {
 
     // Take screenshot
     const screenshotOptions = this.createScreenshotOptions(options);
-    this.logger.debug("Capturing screenshot", screenshotOptions);
+    this.logger.debugObject("Capturing screenshot", screenshotOptions);
 
     const screenshotResult = await this.screenshotService.capture(screenshotOptions);
     if (screenshotResult.err) {
-      this.logger.error("Screenshot capture failed", screenshotResult.val);
+      this.logger.errorObject("Screenshot capture failed", screenshotResult.val);
       return Err(screenshotResult.val);
     }
 
     const screenshot = screenshotResult.val;
     const isTemporary = !options.outputPath;
-    this.logger.debug("Screenshot captured successfully", {
+    this.logger.debugObject("Screenshot captured successfully", {
       path: screenshot.path,
       isTemporary,
     });
@@ -163,7 +163,7 @@ export class AnalysisService {
       // Analyze screenshot with vision API
       const analysisResult = await this.analyzeImage(screenshot.path, options);
       if (analysisResult.err) {
-        this.logger.error("Vision analysis failed", analysisResult.val);
+        this.logger.errorObject("Vision analysis failed", analysisResult.val);
         return Err(analysisResult.val);
       }
 

@@ -37,7 +37,7 @@ export class VisionService {
   private timeout = 30_000; // 30 seconds
 
   constructor(apiKey: string) {
-    this.logger.debug("Initializing VisionService", {
+    this.logger.debugObject("Initializing VisionService", {
       apiKeyPrefix: apiKey.slice(0, 7) + "...",
       apiKeyLength: apiKey.length,
       apiKeyType: apiKey.startsWith("sk-proj-") ? "Project API Key" : "Standard API Key",
@@ -60,8 +60,11 @@ export class VisionService {
   async analyzeScreenshot(
     options: VisionAnalysisOptions
   ): Promise<Result<AnalysisResult, AnalysisError>> {
-    this.logger.info("Starting vision analysis", { viewport: options.viewport });
-    this.logger.debug("Vision options", options);
+    this.logger.infoObject("Starting vision analysis", {
+      viewport: options.viewport,
+      path: options.imagePath,
+    });
+    this.logger.debugObject("Vision options", options);
 
     // Convert image to base64
     const base64Result = await this.imageToBase64(options.imagePath);
@@ -106,7 +109,7 @@ export class VisionService {
    * Log error details for debugging purposes
    */
   private logErrorDetails(attempt: number, error: unknown): void {
-    this.logger.debug(`Error details (attempt ${attempt + 1}/${this.maxRetries + 1})`, {
+    this.logger.debugObject(`Error details (attempt ${attempt + 1}/${this.maxRetries + 1})`, {
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       errorMessage: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
@@ -128,7 +131,7 @@ export class VisionService {
     base64Image: string,
     options: VisionAnalysisOptions
   ): Promise<Result<AnalysisResult, AnalysisError>> {
-    this.logger.debug("API call debug info", {
+    this.logger.debugObject("API call debug info", {
       apiKeyFormat: `${options.apiKey.slice(0, 7)}... (${options.apiKey.length} chars)`,
       apiKeyType: this.getApiKeyType(options.apiKey),
       model: "gpt-4-vision-preview",
@@ -161,6 +164,26 @@ export class VisionService {
       // Log error details at debug level
       this.logErrorDetails(attempt, lastError);
 
+      // Also log with our enhanced debugObject method to ensure visibility
+      if (lastError instanceof Error) {
+        this.logger.debugObject(
+          `Enhanced error details (attempt ${attempt + 1}/${this.maxRetries + 1})`,
+          {
+            errorType: lastError.constructor.name,
+            errorMessage: lastError.message,
+            stack: lastError.stack,
+            apiErrorDetails:
+              lastError instanceof OpenAI.APIError
+                ? {
+                    status: lastError.status,
+                    type: lastError.type,
+                    code: lastError.code,
+                  }
+                : undefined,
+          }
+        );
+      }
+
       // Handle certain errors that should not be retried
       if (this.shouldNotRetry(lastError)) {
         this.logger.info("Error should not be retried.");
@@ -169,7 +192,7 @@ export class VisionService {
     }
 
     // All retries exhausted
-    this.logger.error("All retry attempts exhausted", {
+    this.logger.errorObject("All retry attempts exhausted", {
       attempts: this.maxRetries + 1,
     });
     return this.handleError(lastError);
@@ -179,7 +202,7 @@ export class VisionService {
    * Log the start of an API call sequence
    */
   private logApiCallStart(base64Image: string, options: VisionAnalysisOptions): void {
-    this.logger.debug("Starting OpenAI API call sequence", {
+    this.logger.debugObject("Starting OpenAI API call sequence", {
       imageSize: base64Image.length,
       maxRetries: this.maxRetries,
       timeout: this.timeout,
@@ -240,12 +263,15 @@ export class VisionService {
    * Log request attempt
    */
   private logRequestAttempt(attempt: number, base64Image: string): void {
-    this.logger.debug(`Attempting OpenAI request (attempt ${attempt + 1}/${this.maxRetries + 1})`, {
-      attempt: attempt + 1,
-      totalAttempts: this.maxRetries + 1,
-      imageBytes: Math.floor(base64Image.length * 0.75), // Approximate size in bytes
-      requestTime: new Date().toISOString(),
-    });
+    this.logger.debugObject(
+      `Attempting OpenAI request (attempt ${attempt + 1}/${this.maxRetries + 1})`,
+      {
+        attempt: attempt + 1,
+        totalAttempts: this.maxRetries + 1,
+        imageBytes: Math.floor(base64Image.length * 0.75), // Approximate size in bytes
+        requestTime: new Date().toISOString(),
+      }
+    );
   }
 
   /**
@@ -264,7 +290,7 @@ export class VisionService {
     completion: OpenAI.Chat.Completions.ChatCompletion,
     duration: number
   ): void {
-    this.logger.debug("OpenAI request successful", {
+    this.logger.debugObject("OpenAI request successful", {
       duration: `${duration}ms`,
       model: "gpt-image-1",
       choicesLength: completion.choices.length,
@@ -321,7 +347,7 @@ export class VisionService {
    * Log API error details
    */
   private logApiErrorDetails(error: InstanceType<typeof OpenAI.APIError>): void {
-    this.logger.debug("OpenAI API error details", {
+    this.logger.debugObject("OpenAI API error details", {
       status: error.status,
       type: error.type,
       param: error.param,
@@ -341,7 +367,7 @@ export class VisionService {
     const nextRetryDelay =
       attempt < this.maxRetries ? `${this.retryDelay * Math.pow(2, attempt)}ms` : "No more retries";
 
-    this.logger.debug("Request timeout details", {
+    this.logger.debugObject("Request timeout details", {
       timeoutValue: `${this.timeout}ms`,
       errorName: error.name,
       errorStack: error.stack,
@@ -359,7 +385,7 @@ export class VisionService {
    * Log general error details
    */
   private logGeneralErrorDetails(error: Error, attempt: number): void {
-    this.logger.debug("Request error details", {
+    this.logger.debugObject("Request error details", {
       errorName: error.name,
       errorMessage: error.message,
       errorStack: error.stack,
@@ -388,7 +414,7 @@ export class VisionService {
     // Basic warning log with essential information
     const errorDetails = this.createErrorDetails(error, errorCategory);
 
-    this.logger.warn(
+    this.logger.warnObject(
       `OpenAI request failed (attempt ${attempt + 1}/${this.maxRetries + 1})`,
       errorDetails
     );
@@ -445,7 +471,7 @@ export class VisionService {
     const apiKeyLength = this.openai.apiKey ? this.openai.apiKey.length : 0;
     const apiKeyType = this.openai.apiKey ? this.getApiKeyType(this.openai.apiKey) : "Unknown";
 
-    this.logger.debug("OpenAI API configuration", {
+    this.logger.debugObject("OpenAI API configuration", {
       apiKeyPrefix,
       apiKeyLength,
       apiKeyType,
@@ -459,7 +485,7 @@ export class VisionService {
   private async executeApiRequest(
     requestPayload: OpenAIRequestPayload
   ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
-    this.logger.debug("Using standard chat.completions API with gpt-4o model");
+    this.logger.debug("Using standard chat.completions API with gpt-4.1 model");
 
     if (!requestPayload.messages) {
       throw new Error("Invalid request payload: messages array is missing");
@@ -487,7 +513,7 @@ export class VisionService {
    * Log API call error information
    */
   private logApiCallError(error: unknown): void {
-    this.logger.debug("Error during OpenAI API call", {
+    this.logger.debugObject("Error during OpenAI API call", {
       status: error instanceof OpenAI.APIError ? error.status : undefined,
       type: error instanceof OpenAI.APIError ? error.type : undefined,
       message: error instanceof Error ? error.message : String(error),
@@ -509,7 +535,7 @@ export class VisionService {
       solution: this.getSolutionForError(error),
     };
 
-    this.logger.debug("OpenAI request failed", errorInfo);
+    this.logger.debugObject("OpenAI request failed", errorInfo);
   }
 
   /**
@@ -520,6 +546,7 @@ export class VisionService {
     viewport: string
   ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
     const systemPrompt = this.createSystemPrompt(viewport);
+    this.logger.debugObject("System prompt info", { systemPrompt, viewport });
     this.logSystemPrompt(systemPrompt, viewport);
 
     const requestPayload = this.createRequestPayload(systemPrompt, base64Image);
@@ -540,7 +567,7 @@ export class VisionService {
    * Log system prompt information
    */
   private logSystemPrompt(systemPrompt: string, viewport: string): void {
-    this.logger.debug("Created system prompt", {
+    this.logger.debugObject("Created system prompt", {
       viewport,
       promptLength: systemPrompt.length,
       promptStart: systemPrompt.slice(0, 50) + "...",
@@ -552,14 +579,14 @@ export class VisionService {
    * Create OpenAI request payload
    */
   private createRequestPayload(systemPrompt: string, base64Image: string): OpenAIRequestPayload {
-    this.logger.debug("OpenAI model check", {
+    this.logger.debugObject("OpenAI model check", {
       previousModel: "gpt-image-1",
-      usingModel: "gpt-4o",
+      usingModel: "gpt-4.1",
       note: "Using widely available model that works with most API keys",
     });
 
     return {
-      model: "gpt-4o", // This is the most widely available model with vision capabilities
+      model: "gpt-4.1", // This is the most widely available model with vision capabilities
       messages: [
         {
           role: "system",
@@ -594,7 +621,7 @@ export class VisionService {
     base64Image: string,
     systemPrompt: string
   ): void {
-    this.logger.debug("OpenAI API request details", {
+    this.logger.debugObject("OpenAI API request details", {
       model: requestPayload.model,
       messageCount: requestPayload.messages.length,
       systemPromptLength: systemPrompt.length,
@@ -719,7 +746,7 @@ export class VisionService {
    */
   private logRequestError(error: unknown): void {
     // Basic error log at error level
-    this.logger.error("Error in OpenAI API request", {
+    this.logger.errorObject("Error in OpenAI API request", {
       error: error instanceof Error ? error.message : String(error),
       type: error instanceof Error ? error.constructor.name : typeof error,
       isApiError: error instanceof OpenAI.APIError,
@@ -727,7 +754,7 @@ export class VisionService {
     });
 
     const debugContext = this.buildDebugContext(error);
-    this.logger.debug("Detailed OpenAI API request error", debugContext);
+    this.logger.debugObject("Detailed OpenAI API request error", debugContext);
   }
 
   /**
@@ -738,7 +765,7 @@ export class VisionService {
     viewport: string
   ): Result<AnalysisResult, AnalysisError> {
     const analysis = completion.choices[0]?.message?.content;
-    this.logger.debug("Received response from OpenAI", {
+    this.logger.debugObject("Received response from OpenAI", {
       hasContent: !!analysis,
       model: completion.model,
       finishReason: completion.choices[0]?.finish_reason,
@@ -746,7 +773,7 @@ export class VisionService {
       completionTokens: completion.usage?.completion_tokens,
     });
 
-    this.logger.debug("OpenAI API response success", {
+    this.logger.debugObject("OpenAI API response success", {
       model: completion.model,
       contentPreview: analysis?.slice(0, 100) + "...",
       apiStatus: "API key works with specified model",
@@ -808,7 +835,7 @@ export class VisionService {
     }
 
     // Log detailed API error information
-    this.logger.error("OpenAI API error", {
+    this.logger.errorObject("OpenAI API error", {
       status: error.status,
       code,
       message: error.message,
@@ -822,7 +849,7 @@ export class VisionService {
     });
 
     // Log the full error object and stack at debug level
-    this.logger.debug("OpenAI API error details", {
+    this.logger.debugObject("OpenAI API error details", {
       stack: error.stack,
       headers: error.headers,
       body: error.error, // Log the raw error response body
@@ -834,7 +861,7 @@ export class VisionService {
     // Add specific debugging suggestions based on status code
     switch (error.status) {
       case 400: {
-        this.logger.debug("Possible 400 error causes", {
+        this.logger.debugObject("Possible 400 error causes", {
           possibleCauses: [
             "Invalid API key format",
             "Invalid model name",
@@ -853,7 +880,7 @@ export class VisionService {
         break;
       }
       case 401: {
-        this.logger.debug("API key authentication error", {
+        this.logger.debugObject("API key authentication error", {
           suggestions: [
             "Verify the API key is correct and not expired",
             "Check if the API key has proper permissions",
@@ -865,7 +892,7 @@ export class VisionService {
         break;
       }
       case 429: {
-        this.logger.debug("Rate limit exceeded error", {
+        this.logger.debugObject("Rate limit exceeded error", {
           retryAfter,
           suggestions: [
             "Wait before making additional requests",
@@ -879,7 +906,7 @@ export class VisionService {
       }
       default: {
         if (error.status && error.status >= 500) {
-          this.logger.debug("OpenAI server error", {
+          this.logger.debugObject("OpenAI server error", {
             suggestions: [
               "This is an OpenAI service issue, not your code",
               "Wait and retry the request later",
@@ -943,14 +970,14 @@ export class VisionService {
     }
 
     // Log basic error info at error level
-    this.logger.error("Network error calling OpenAI API", {
+    this.logger.errorObject("Network error calling OpenAI API", {
       errorName: error.name,
       message: error.message,
       code: errorCode,
     });
 
     // Log detailed debugging information at debug level
-    this.logger.debug("Network error details", {
+    this.logger.debugObject("Network error details", {
       stack: error.stack,
       cause: error.cause,
       errorType: error.constructor?.name,
@@ -1102,13 +1129,13 @@ export class VisionService {
    */
   private handleGenericError(error: unknown): Result<AnalysisResult, AnalysisError> {
     // Basic error information at error level
-    this.logger.error("Vision analysis failed with unknown error", {
+    this.logger.errorObject("Vision analysis failed with unknown error", {
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       message: error instanceof Error ? error.message : String(error),
     });
 
     const debugInfo = this.collectDebugInfo(error);
-    this.logger.debug("Unknown error details", debugInfo);
+    this.logger.debugObject("Unknown error details", debugInfo);
 
     return Err({
       type: "ANALYSIS_ERROR",
@@ -1134,9 +1161,9 @@ export class VisionService {
    * Creates the system prompt for the vision model
    */
   private createSystemPrompt(viewport: string): string {
-    return `You are an experienced web designer and UX expert reviewing website screenshots. 
-Focus on identifying critical issues, errors, and fundamental problems rather 
-than minor UI improvements. Consider the device context (${viewport}) when 
+    return `You are an experienced web designer and UX expert reviewing website screenshots.
+Focus on identifying critical issues, errors, and fundamental problems rather
+than minor UI improvements. Consider the device context (${viewport}) when
 analyzing. Provide clear, actionable feedback about actual problems.
 
 Key areas to focus on:
@@ -1156,13 +1183,13 @@ Avoid minor suggestions about aesthetics unless they significantly impact usabil
    */
   private async imageToBase64(imagePath: string): Promise<Result<string, AnalysisError>> {
     try {
-      this.logger.debug("Reading image file", { imagePath });
+      this.logger.debugObject("Reading image file", { imagePath });
       const imageBuffer = await readFile(imagePath);
       const base64String = imageBuffer.toString("base64");
-      this.logger.debug("Image converted to base64", { length: base64String.length });
+      this.logger.debugObject("Image converted to base64", { length: base64String.length });
       return Ok(base64String);
     } catch (error) {
-      this.logger.error("Failed to convert image to base64", { error, imagePath });
+      this.logger.errorObject("Failed to convert image to base64", { error, imagePath });
       return Err({
         type: "FILE_SYSTEM_ERROR",
         code: "READ_ERROR",

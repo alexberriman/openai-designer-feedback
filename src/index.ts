@@ -42,7 +42,7 @@ program
     configureLogger({ verbose: options.verbose });
     const logger = getGlobalLogger();
 
-    logger.debug("Starting design feedback CLI", { url, options });
+    logger.debugObject("Starting design feedback CLI", { url, options });
 
     try {
       // Step 1: Validate inputs and get API key
@@ -74,7 +74,7 @@ async function validateAndPrepare(
       code: "INVALID_OPTION",
       message: validations.val,
     };
-    logger.error("Validation failed", validationError);
+    logger.errorObject("Validation failed", validationError);
     console.error(chalk.red(createUserFriendlyError(validationError)));
     process.exit(getExitCode(validationError));
   }
@@ -86,7 +86,7 @@ async function validateAndPrepare(
   const apiKeyResult = await ensureApiKey(validatedOptions.apiKey);
   if (apiKeyResult.err) {
     const error = apiKeyResult.val as AppError;
-    logger.error("API key error", error);
+    logger.errorObject("API key error", error);
     console.error(chalk.red(createUserFriendlyError(error)));
     process.exit(getExitCode(error));
   }
@@ -116,7 +116,7 @@ async function runAnalysis(
   const analysisResult = await analysisService.analyzeWebsite(analysisOptions);
   if (analysisResult.err) {
     const error = analysisResult.val as AppError;
-    logger.error("Analysis error", error);
+    logger.errorObject("Analysis error", error);
     console.error(chalk.red(createUserFriendlyError(error)));
     process.exit(getExitCode(error));
   }
@@ -165,7 +165,7 @@ async function saveToFile(
     console.log(chalk.green(`\n✓ Output saved to: ${saveResult.val}`));
   } else {
     const error = saveResult.val as AppError;
-    logger.error("Failed to save output", error);
+    logger.errorObject("Failed to save output", error);
     console.error(chalk.red(createUserFriendlyError(error)));
     process.exit(getExitCode(error));
   }
@@ -175,10 +175,10 @@ async function saveToFile(
  * Handle unexpected errors
  */
 function handleUnexpectedError(error: unknown, logger: ReturnType<typeof getGlobalLogger>) {
-  logger.error("Unexpected error", error);
+  logger.errorObject("Unexpected error", error);
 
   // Log critical errors properly using the logger
-  logger.error("Critical error in main handler", {
+  logger.errorObject("Critical error in main handler", {
     errorType: error instanceof Error ? error.constructor.name : typeof error,
     errorMessage: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : "No stack trace",
