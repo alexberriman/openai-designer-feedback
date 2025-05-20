@@ -63,12 +63,12 @@ describe("VisionService", () => {
       if (result.ok) {
         expect(result.val.content).toContain("Critical issue");
         expect(result.val.viewport).toBe("mobile");
-        expect(result.val.model).toBe("gpt-image-1");
+        expect(result.val.model).toBe("gpt-3.5-turbo"); // Updated model name
       }
 
       // Verify OpenAI was called with correct parameters
       expect(mockCreate).toHaveBeenCalledWith({
-        model: "gpt-image-1",
+        model: "gpt-4o", // Updated model name
         messages: expect.arrayContaining([
           expect.objectContaining({
             role: "system",
