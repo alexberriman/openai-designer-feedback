@@ -59,7 +59,7 @@ export class AnalysisService {
       // Use temp file if no output path specified
       outputPath: options.outputPath || `/tmp/design-feedback-${Date.now()}.jpg`,
       quality: 90,
-      fullPage: false,
+      fullPage: options.fullPage,
     };
   }
 

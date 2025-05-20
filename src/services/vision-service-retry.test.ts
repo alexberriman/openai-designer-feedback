@@ -123,7 +123,7 @@ describe("VisionService retry logic", () => {
     });
 
     // Advance timers to trigger timeout
-    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.advanceTimersByTimeAsync(60_000);
 
     const result = await resultPromise;
 

@@ -28,6 +28,7 @@ export interface AnalysisOptions {
   outputFormat?: "text" | "json";
   outputPath?: string;
   verbose?: boolean;
+  fullPage?: boolean;
 }
 
 /**

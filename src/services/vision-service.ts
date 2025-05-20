@@ -34,7 +34,7 @@ export class VisionService {
   private logger = getGlobalLogger();
   private maxRetries = 3;
   private retryDelay = 1000; // milliseconds
-  private timeout = 30_000; // 30 seconds
+  private timeout = 60_000; // 60 seconds
 
   constructor(apiKey: string) {
     this.logger.debugObject("Initializing VisionService", {

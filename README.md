@@ -86,7 +86,8 @@ Options:
   -f, --format <format>       Output format (json/text) (default: "text")
   -w, --wait <seconds>        Wait time before screenshot (seconds)
   --wait-for <selector>       Wait for specific CSS selector
-  --no-full-page              Capture viewport only, not full page
+  --full-page                 Capture full page (default: true)
+  --no-full-page              Capture viewport only
   --quality <number>          JPEG quality (0-100) (default: 90)
   --api-key <key>             Override default OpenAI API key
   --verbose                   Enable debug logging

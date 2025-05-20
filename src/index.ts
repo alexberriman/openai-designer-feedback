@@ -32,7 +32,8 @@ program
   .option("-f, --format <format>", "Output format (json, text)", "text")
   .option("-w, --wait <seconds>", "Wait time before screenshot (seconds)")
   .option("--wait-for <selector>", "Wait for specific element")
-  .option("--no-full-page", "Capture viewport only (default: full page)")
+  .option("--full-page", "Capture full page (default: true)")
+  .option("--no-full-page", "Capture viewport only")
   .option("--quality <number>", "JPEG quality (0-100)", "90")
   .option("--api-key <key>", "Override default OpenAI API key")
   .option("--verbose", "Enable verbose logging")
@@ -111,6 +112,7 @@ async function runAnalysis(
     outputFormat: options.format,
     outputPath: options.output,
     verbose: options.verbose,
+    fullPage: options.fullPage !== false,
   };
 
   const analysisResult = await analysisService.analyzeWebsite(analysisOptions);
