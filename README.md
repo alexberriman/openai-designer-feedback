@@ -14,24 +14,30 @@ A powerful CLI tool that captures screenshots of websites and provides professio
 
 ## Installation
 
+### Using npx (Recommended)
+
+```bash
+npx @alexberriman/design-feedback https://example.com
+```
+
 ### Using npm
 
 ```bash
-npm install -g design-feedback
+npm install -g @alexberriman/design-feedback
 ```
 
 ### Using Bun
 
 ```bash
-bun install -g design-feedback
+bun install -g @alexberriman/design-feedback
 ```
 
 ### From Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/alexberriman/design-feedback.git
-cd design-feedback
+git clone https://github.com/alexberriman/openai-designer-feedback.git
+cd openai-designer-feedback
 
 # Install dependencies
 bun install
@@ -62,7 +68,7 @@ The tool requires an OpenAI API key to analyze screenshots. Set it up in one of 
 
 3. **Command Line Option**
    ```bash
-   design-feedback https://example.com --api-key "your-api-key-here"
+   npx @alexberriman/design-feedback https://example.com --api-key "your-api-key-here"
    ```
 
 If no API key is configured, the tool will prompt you to enter one interactively.
@@ -72,13 +78,13 @@ If no API key is configured, the tool will prompt you to enter one interactively
 ### Basic Usage
 
 ```bash
-design-feedback https://example.com
+npx @alexberriman/design-feedback https://example.com
 ```
 
 ### Command Options
 
 ```bash
-design-feedback [options] <url>
+npx @alexberriman/design-feedback [options] <url>
 
 Options:
   -v, --viewport <size>       Viewport size (mobile/tablet/desktop/WIDTHxHEIGHT) (default: "desktop")
@@ -98,32 +104,32 @@ Options:
 
 #### Basic Website Analysis
 ```bash
-design-feedback https://example.com
+npx @alexberriman/design-feedback https://example.com
 ```
 
 #### Mobile Viewport Analysis
 ```bash
-design-feedback https://example.com --viewport mobile
+npx @alexberriman/design-feedback https://example.com --viewport mobile
 ```
 
 #### Custom Viewport Size
 ```bash
-design-feedback https://example.com --viewport 1024x768
+npx @alexberriman/design-feedback https://example.com --viewport 1024x768
 ```
 
 #### Save Screenshot with JSON Output
 ```bash
-design-feedback https://example.com --output screenshot.png --format json
+npx @alexberriman/design-feedback https://example.com --output screenshot.png --format json
 ```
 
 #### Wait for Dynamic Content
 ```bash
-design-feedback https://spa-app.com --wait-for ".content-loaded" --wait 3
+npx @alexberriman/design-feedback https://spa-app.com --wait-for ".content-loaded" --wait 3
 ```
 
 #### Save Analysis to File
 ```bash
-design-feedback https://example.com --format json > analysis.json
+npx @alexberriman/design-feedback https://example.com --format json > analysis.json
 ```
 
 ## Output Formats
@@ -199,24 +205,24 @@ The JSON format provides structured data for programmatic use:
 
 ### Analyze a Production Website
 ```bash
-design-feedback https://mycompany.com --viewport mobile --format json > mobile-audit.json
+npx @alexberriman/design-feedback https://mycompany.com --viewport mobile --format json > mobile-audit.json
 ```
 
 ### Check Responsive Design
 ```bash
 # Check mobile view
-design-feedback https://mysite.com --viewport mobile --output mobile.png
+npx @alexberriman/design-feedback https://mysite.com --viewport mobile --output mobile.png
 
 # Check tablet view
-design-feedback https://mysite.com --viewport tablet --output tablet.png
+npx @alexberriman/design-feedback https://mysite.com --viewport tablet --output tablet.png
 
 # Check desktop view
-design-feedback https://mysite.com --viewport desktop --output desktop.png
+npx @alexberriman/design-feedback https://mysite.com --viewport desktop --output desktop.png
 ```
 
 ### SPA with Dynamic Content
 ```bash
-design-feedback https://spa-app.com \
+npx @alexberriman/design-feedback https://spa-app.com \
   --wait-for "[data-loaded='true']" \
   --wait 5 \
   --no-full-page
@@ -225,7 +231,7 @@ design-feedback https://spa-app.com \
 ### CI/CD Integration
 ```bash
 # In your CI pipeline
-design-feedback $PREVIEW_URL --format json > design-review.json
+npx @alexberriman/design-feedback $PREVIEW_URL --format json > design-review.json
 
 # Check for critical issues
 if grep -q '"severity": "critical"' design-review.json; then
@@ -258,7 +264,7 @@ fi
 Enable verbose logging for troubleshooting:
 
 ```bash
-design-feedback https://example.com --verbose
+npx @alexberriman/design-feedback https://example.com --verbose
 ```
 
 This will show:
@@ -273,10 +279,17 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Development setup
-git clone https://github.com/alexberriman/design-feedback.git
-cd design-feedback
+git clone https://github.com/alexberriman/openai-designer-feedback.git
+cd openai-designer-feedback
 bun install
 bun test
+```
+
+For local testing during development:
+```bash
+# Run the local build directly
+npm run build
+./bin/design-feedback https://example.com
 ```
 
 ## License
@@ -286,8 +299,8 @@ MIT © [Alex Berriman](https://github.com/alexberriman)
 ## Support
 
 - 📧 Email: alex@berriman.dev
-- 🐛 Issues: [GitHub Issues](https://github.com/alexberriman/design-feedback/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/alexberriman/design-feedback/discussions)
+- 🐛 Issues: [GitHub Issues](https://github.com/alexberriman/openai-designer-feedback/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/alexberriman/openai-designer-feedback/discussions)
 
 ## Acknowledgments
 
