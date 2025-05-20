@@ -17,19 +17,19 @@ A powerful CLI tool that captures screenshots of websites and provides professio
 ### Using npx (Recommended)
 
 ```bash
-npx @alexberriman/design-feedback https://example.com
+npx @alexberriman/openai-designer-feedback https://example.com
 ```
 
 ### Using npm
 
 ```bash
-npm install -g @alexberriman/design-feedback
+npm install -g @alexberriman/openai-designer-feedback
 ```
 
 ### Using Bun
 
 ```bash
-bun install -g @alexberriman/design-feedback
+bun install -g @alexberriman/openai-designer-feedback
 ```
 
 ### From Source
@@ -68,7 +68,7 @@ The tool requires an OpenAI API key to analyze screenshots. Set it up in one of 
 
 3. **Command Line Option**
    ```bash
-   npx @alexberriman/design-feedback https://example.com --api-key "your-api-key-here"
+   npx @alexberriman/openai-designer-feedback https://example.com --api-key "your-api-key-here"
    ```
 
 If no API key is configured, the tool will prompt you to enter one interactively.
@@ -78,7 +78,7 @@ If no API key is configured, the tool will prompt you to enter one interactively
 ### Basic Usage
 
 ```bash
-npx @alexberriman/design-feedback https://example.com
+npx @alexberriman/openai-designer-feedback https://example.com
 ```
 
 ### Command Options
@@ -105,22 +105,22 @@ Options:
 
 #### Basic Website Analysis
 ```bash
-npx @alexberriman/design-feedback https://example.com
+npx @alexberriman/openai-designer-feedback https://example.com
 ```
 
 #### Mobile Viewport Analysis
 ```bash
-npx @alexberriman/design-feedback https://example.com --viewport mobile
+npx @alexberriman/openai-designer-feedback https://example.com --viewport mobile
 ```
 
 #### Custom Viewport Size
 ```bash
-npx @alexberriman/design-feedback https://example.com --viewport 1024x768
+npx @alexberriman/openai-designer-feedback https://example.com --viewport 1024x768
 ```
 
 #### Save Screenshot with JSON Output
 ```bash
-npx @alexberriman/design-feedback https://example.com --output screenshot.png --format json
+npx @alexberriman/openai-designer-feedback https://example.com --output screenshot.png --format json
 ```
 
 #### Wait for Dynamic Content
@@ -130,12 +130,12 @@ npx @alexberriman/design-feedback https://spa-app.com --wait-for ".content-loade
 
 #### Save Analysis to File (Redirection)
 ```bash
-npx @alexberriman/design-feedback https://example.com --format json > analysis.json
+npx @alexberriman/openai-designer-feedback https://example.com --format json > analysis.json
 ```
 
 #### Save Analysis to File (Direct)
 ```bash
-npx @alexberriman/design-feedback https://example.com --format json --save analysis.json
+npx @alexberriman/openai-designer-feedback https://example.com --format json --save analysis.json
 ```
 
 ## Output Formats
@@ -268,7 +268,7 @@ fi
 Enable verbose logging for troubleshooting:
 
 ```bash
-npx @alexberriman/design-feedback https://example.com --verbose
+npx @alexberriman/openai-designer-feedback https://example.com --verbose
 ```
 
 This will show:
