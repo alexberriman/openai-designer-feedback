@@ -4,6 +4,7 @@ import type {
   FormatterResult,
   StructuredOutput,
   StructuredIssue,
+  DesignRecommendation,
 } from "./types.js";
 import type { AnalysisResult } from "../../types/analysis.js";
 
@@ -25,12 +26,66 @@ export class JsonFormatter implements OutputFormatter {
     return { content };
   }
 
+  /**
+   * Parses JSON string design recommendations into structured format
+   */
+  private parseDesignRecommendations(jsonContent: string): DesignRecommendation[] {
+    try {
+      // Try to fix truncated JSON by adding closing brackets if needed
+      let fixedContent = jsonContent;
+
+      // Check if the JSON appears to be truncated (has opening [ but no closing ])
+      if (fixedContent.trim().startsWith("[") && !fixedContent.trim().endsWith("]")) {
+        // Find the last complete object by looking for "},{"
+        const lastObjectEnd = fixedContent.lastIndexOf("},");
+
+        if (lastObjectEnd === -1) {
+          // If we can't find a complete object, just return an empty array
+          return [];
+        }
+
+        // Keep only the content up to the last complete object and add closing
+        fixedContent = fixedContent.slice(0, lastObjectEnd + 1) + "]";
+      }
+
+      // Try to parse the content as JSON
+      const parsedRecommendations = JSON.parse(fixedContent);
+
+      // Validate the structure matches what we expect
+      if (Array.isArray(parsedRecommendations)) {
+        // Filter out any invalid recommendations
+        return parsedRecommendations.filter((rec) => {
+          // Ensure each recommendation has the required fields
+          const hasRequiredFields =
+            rec &&
+            typeof rec === "object" &&
+            "title" in rec &&
+            "description" in rec &&
+            "priority" in rec;
+
+          // Validate priority is one of our allowed values
+          const validPriority =
+            rec && "priority" in rec && ["high", "medium", "low"].includes(rec.priority);
+
+          return hasRequiredFields && validPriority;
+        });
+      }
+
+      // If not an array, return empty array
+      return [];
+    } catch (error) {
+      // If parsing fails, log error and return empty array
+      console.error("Failed to parse design recommendations as JSON:", error);
+      return [];
+    }
+  }
+
   private parseAnalysis(result: AnalysisResult): StructuredOutput {
     const issues = this.extractIssues(result.content);
     const summary = this.extractSummary(result.content);
     const pageDescription = this.extractPageDescription(result.content);
 
-    return {
+    const output: StructuredOutput = {
       url: result.url || "Unknown",
       timestamp: result.timestamp,
       viewport: result.viewport,
@@ -45,6 +100,13 @@ export class JsonFormatter implements OutputFormatter {
         cli: "@alexberriman/openai-designer-feedback",
       },
     };
+
+    // Add design recommendations if available - parse from markdown to structured format
+    if (result.designRecommendations) {
+      output.designRecommendations = this.parseDesignRecommendations(result.designRecommendations);
+    }
+
+    return output;
   }
 
   private extractPageDescription(content: string): string {

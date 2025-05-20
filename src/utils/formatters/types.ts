@@ -34,8 +34,14 @@ export interface StructuredIssue {
 }
 
 /**
- * Structured output for JSON formatting
+ * Interface for structured design recommendation
  */
+export interface DesignRecommendation {
+  title: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+}
+
 export interface StructuredOutput {
   url: string;
   timestamp: string;
@@ -46,6 +52,7 @@ export interface StructuredOutput {
   pageDescription: string;
   summary: string;
   issues: StructuredIssue[];
+  designRecommendations?: DesignRecommendation[];
   metadata: {
     version: string;
     cli: string;

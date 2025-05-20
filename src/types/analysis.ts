@@ -9,6 +9,7 @@ export interface AnalysisResult {
   analysisTime?: number;
   screenshotPath?: string;
   url?: string;
+  designRecommendations?: string;
 }
 
 /**
@@ -29,6 +30,7 @@ export interface AnalysisOptions {
   outputPath?: string;
   verbose?: boolean;
   fullPage?: boolean;
+  includeDesignRecommendations?: boolean;
 }
 
 /**
@@ -45,6 +47,11 @@ export interface StructuredAnalysis {
     minor: string[];
   };
   summary: string;
+  designRecommendations?: {
+    visual: string[];
+    layout: string[];
+    aesthetics: string[];
+  };
   metadata: {
     analysisTime: number;
     screenshotPath?: string;

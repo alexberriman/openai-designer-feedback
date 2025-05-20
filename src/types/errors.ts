@@ -81,7 +81,7 @@ export interface ValidationError extends BaseError {
  */
 export interface AnalysisError extends BaseError {
   type: "ANALYSIS_ERROR";
-  code: "PROCESSING_FAILED" | "INVALID_RESPONSE" | "TIMEOUT";
+  code: "PROCESSING_FAILED" | "INVALID_RESPONSE" | "TIMEOUT" | "DESIGN_RECOMMENDATIONS_FAILED";
 }
 
 /**
@@ -155,6 +155,8 @@ export const ErrorMessages: Record<string, Record<string, string>> = {
       "Failed to analyze the screenshot. The AI model might be temporarily unavailable.",
     INVALID_RESPONSE: "Received invalid response from AI model. Please try again.",
     TIMEOUT: "Analysis timed out. The AI model took too long to respond.",
+    DESIGN_RECOMMENDATIONS_FAILED:
+      "Failed to generate design recommendations. The base analysis is still available.",
   },
   NETWORK_ERROR: {
     CONNECTION_ERROR:

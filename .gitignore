@@ -51,3 +51,5 @@ screenshots/
 
 /assistant_cache/
 /prompt_enhancement_cache
+
+example.json

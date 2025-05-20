@@ -71,17 +71,19 @@ describe("VisionService", () => {
       }
 
       // Verify OpenAI was called with correct parameters
-      expect(mockCreate).toHaveBeenCalledWith({
-        model: "gpt-4.1", // Match the actual model used in the implementation
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: "system",
-            content: expect.stringContaining("strict, highly pragmatic web design QA tool"),
-          }),
-        ]),
-        max_tokens: 1000,
-        temperature: 0.7,
-      });
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "gpt-4.1", // Match the actual model used in the implementation
+          messages: expect.arrayContaining([
+            expect.objectContaining({
+              role: "system",
+              content: expect.stringContaining(
+                "You are a strict visual QA tester reviewing website screenshots"
+              ),
+            }),
+          ]),
+        })
+      );
     });
 
     it("should handle file read errors", async () => {

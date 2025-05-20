@@ -13,6 +13,7 @@ interface VisionAnalysisOptions {
   imagePath: string;
   viewport: string;
   apiKey: string;
+  isDesignRecommendation?: boolean;
 }
 
 /**
@@ -63,6 +64,7 @@ export class VisionService {
     this.logger.infoObject("Starting vision analysis", {
       viewport: options.viewport,
       path: options.imagePath,
+      isDesignRecommendation: options.isDesignRecommendation,
     });
     this.logger.debugObject("Vision options", options);
 
@@ -74,6 +76,35 @@ export class VisionService {
 
     // Call OpenAI and handle the response
     return this.callOpenAI(base64Result.val, options);
+  }
+
+  /**
+   * Gets design recommendations for a screenshot
+   */
+  async getDesignRecommendations(
+    options: VisionAnalysisOptions
+  ): Promise<Result<AnalysisResult, AnalysisError>> {
+    this.logger.infoObject("Starting design recommendations analysis", {
+      viewport: options.viewport,
+      path: options.imagePath,
+    });
+
+    // Create a copy of the options with isDesignRecommendation flag set to true
+    const designOptions: VisionAnalysisOptions = {
+      ...options,
+      isDesignRecommendation: true,
+    };
+
+    this.logger.debugObject("Design recommendations options", designOptions);
+
+    // Convert image to base64
+    const base64Result = await this.imageToBase64(options.imagePath);
+    if (base64Result.err) {
+      return Err(base64Result.val);
+    }
+
+    // Call OpenAI and handle the response with design prompt
+    return this.callOpenAI(base64Result.val, designOptions);
   }
 
   /**
@@ -136,6 +167,7 @@ export class VisionService {
       apiKeyType: this.getApiKeyType(options.apiKey),
       model: "gpt-4-vision-preview",
       imageSize: `${Math.round(base64Image.length / 1024)}KB`,
+      isDesignRecommendation: options.isDesignRecommendation,
     });
 
     this.logApiCallStart(base64Image, options);
@@ -246,13 +278,15 @@ export class VisionService {
       // Create promise race to handle timeouts
       const timeoutPromise = this.createTimeoutPromise();
       const startTime = Date.now();
-      const completionPromise = this.makeOpenAIRequest(base64Image, options.viewport);
+      const completionPromise = this.makeOpenAIRequest(base64Image, options);
       const completion = await Promise.race([completionPromise, timeoutPromise]);
       const duration = Date.now() - startTime;
 
       this.logSuccessfulRequest(completion, duration);
 
-      return Ok(this.processOpenAIResponse(completion, options.viewport));
+      return Ok(
+        this.processOpenAIResponse(completion, options.viewport, options.isDesignRecommendation)
+      );
     } catch (error) {
       this.logFailedRequest(attempt, error);
       return Err(error);
@@ -299,6 +333,9 @@ export class VisionService {
       completionTokens: completion.usage?.completion_tokens,
       totalTokens: completion.usage?.total_tokens,
     });
+
+    // Log the raw OpenAI response in debug mode
+    this.logger.debugObject("Raw OpenAI response", completion);
   }
 
   /**
@@ -543,13 +580,21 @@ export class VisionService {
    */
   private async makeOpenAIRequest(
     base64Image: string,
-    viewport: string
+    options: VisionAnalysisOptions
   ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
-    const systemPrompt = this.createSystemPrompt(viewport);
-    this.logger.debugObject("System prompt info", { systemPrompt, viewport });
-    this.logSystemPrompt(systemPrompt, viewport);
+    const systemPrompt = this.createSystemPrompt(options.viewport, options.isDesignRecommendation);
+    this.logger.debugObject("System prompt info", {
+      systemPrompt,
+      viewport: options.viewport,
+      isDesignRecommendation: options.isDesignRecommendation,
+    });
+    this.logSystemPrompt(systemPrompt, options.viewport);
 
-    const requestPayload = this.createRequestPayload(systemPrompt, base64Image);
+    const requestPayload = this.createRequestPayload(
+      systemPrompt,
+      base64Image,
+      options.isDesignRecommendation
+    );
     this.logRequestDetails(requestPayload, base64Image, systemPrompt);
 
     this.logApiConfiguration(requestPayload.model);
@@ -575,18 +620,32 @@ export class VisionService {
     });
   }
 
-  /**
-   * Create OpenAI request payload
-   */
-  private createRequestPayload(systemPrompt: string, base64Image: string): OpenAIRequestPayload {
+  private createRequestPayload(
+    systemPrompt: string,
+    base64Image: string,
+    isDesignRecommendation: boolean = false
+  ): OpenAIRequestPayload {
     this.logger.debugObject("OpenAI model check", {
       previousModel: "gpt-image-1",
       usingModel: "gpt-4.1",
       note: "Using widely available model that works with most API keys",
+      isDesignRecommendation,
     });
 
+    const userPrompt = isDesignRecommendation
+      ? "Analyze this website screenshot and provide professional design recommendations to make it visually stunning and modern."
+      : "Please analyze this website screenshot and identify only clear, visual layout issues.";
+
+    // We'll increase the token limit for design recommendations as they're more extensive
+    // But we need to be careful not to exceed the maximum context length
+    const maxTokens = isDesignRecommendation ? 1536 : 512;
+
+    // Use higher temperature for design recommendations to encourage creative suggestions
+    // But keep it moderate to ensure structured response
+    const temperature = isDesignRecommendation ? 0.4 : 0;
+
     return {
-      model: "gpt-4.1", // This is the most widely available model with vision capabilities
+      model: "gpt-4.1",
       messages: [
         {
           role: "system",
@@ -597,7 +656,7 @@ export class VisionService {
           content: [
             {
               type: "text",
-              text: "Please analyze this website screenshot and identify critical design issues, errors, and fundamental problems.",
+              text: userPrompt,
             },
             {
               type: "image_url",
@@ -608,8 +667,8 @@ export class VisionService {
           ],
         },
       ],
-      max_tokens: 1000,
-      temperature: 0.7,
+      max_tokens: maxTokens,
+      temperature: temperature,
     };
   }
 
@@ -762,7 +821,8 @@ export class VisionService {
    */
   private processOpenAIResponse(
     completion: OpenAI.Chat.Completions.ChatCompletion,
-    viewport: string
+    viewport: string,
+    isDesignRecommendation: boolean = false
   ): Result<AnalysisResult, AnalysisError> {
     const analysis = completion.choices[0]?.message?.content;
     this.logger.debugObject("Received response from OpenAI", {
@@ -771,6 +831,7 @@ export class VisionService {
       finishReason: completion.choices[0]?.finish_reason,
       promptTokens: completion.usage?.prompt_tokens,
       completionTokens: completion.usage?.completion_tokens,
+      isDesignRecommendation,
     });
 
     this.logger.debugObject("OpenAI API response success", {
@@ -778,6 +839,9 @@ export class VisionService {
       contentPreview: analysis?.slice(0, 100) + "...",
       apiStatus: "API key works with specified model",
     });
+
+    // Log the complete raw response for debugging purposes
+    this.logger.debugObject("Full OpenAI response content", completion);
 
     if (!analysis) {
       this.logger.error("No analysis content received from OpenAI");
@@ -788,6 +852,41 @@ export class VisionService {
       } as AnalysisError);
     }
 
+    if (isDesignRecommendation) {
+      this.logger.info("Design recommendations completed successfully");
+
+      // If design recommendations, validate if it's JSON
+      let formattedRecommendations = analysis;
+
+      // Clean the response: sometimes LLM includes markdown code blocks around JSON
+      if (analysis.includes("```json")) {
+        // Replace all occurrences of markdown code block syntax
+        formattedRecommendations = analysis.replaceAll("```json", "").replaceAll("```", "").trim();
+        this.logger.debug("Extracted JSON from markdown code block");
+      } else if (analysis.includes("```")) {
+        // Replace all occurrences of generic code block syntax
+        formattedRecommendations = analysis.replaceAll("```", "").trim();
+        this.logger.debug("Extracted content from generic code block");
+      }
+
+      // Debugging the processed recommendations
+      this.logger.debugObject("Processed design recommendations", {
+        originalLength: analysis.length,
+        processedLength: formattedRecommendations.length,
+        startsWithBracket: formattedRecommendations.trim().startsWith("["),
+        endsWithBracket: formattedRecommendations.trim().endsWith("]"),
+        preview: formattedRecommendations.slice(0, 100) + "...",
+      });
+
+      return Ok({
+        content: "", // The main content field will remain empty for design recommendations
+        designRecommendations: formattedRecommendations, // Store processed design recommendations
+        timestamp: new Date().toISOString(),
+        viewport,
+        model: completion.model || "gpt-3.5-turbo",
+      });
+    }
+
     this.logger.info("Vision analysis completed successfully");
 
     return Ok({
@@ -796,6 +895,109 @@ export class VisionService {
       viewport,
       model: completion.model || "gpt-3.5-turbo",
     });
+  }
+
+  /**
+   * Creates a system prompt based on the requested analysis type
+   */
+  private createSystemPrompt(viewport: string, isDesignRecommendation: boolean = false): string {
+    if (isDesignRecommendation) {
+      return `You are a world-class product and UI designer known for creating clean, modern, layout-strong web interfaces for high-performing websites. You specialize in refining pages that already use modern frameworks like Tailwind CSS and need structural layout improvements and visual polish, not a redesign.
+
+Viewport: ${viewport}
+
+You are reviewing a static screenshot of a webpage. Your task is to suggest 9 specific, actionable visual improvements for this exact layout — not generic ideas, and not things that cannot be inferred from a screenshot (like animations or interactivity).
+
+Focus on:
+
+1. LAYOUT & STRUCTURE (high priority)
+   - Fix section spacing, hierarchy, alignment, flow
+   - Improve visual rhythm and reduce clutter
+   - Ensure clear separation between sections and elements
+
+2. DESIGN ENHANCEMENTS (medium priority)
+   - Add tasteful visual touches that increase visual interest
+   - Improve media placement, component balance, or use of whitespace
+   - Add visual structure or polish using borders, backgrounds, cards
+
+3. AESTHETIC FINESSE (low priority)
+   - Tweak colors, depth, or shadowing — only if visibly relevant
+   - Refine contrast or typography sparingly, assuming Tailwind handles most of it
+
+🚫 DO NOT:
+- Recommend implementing grids, dark mode, Tailwind, or framework-specific systems
+- Suggest animations, micro-interactions, or loading states (it's a static screenshot)
+- Provide generic advice not grounded in the actual visible layout
+- Recommend copy changes, accessibility, or performance improvements
+
+✅ DO:
+- Point to specific sections or elements that visually stand out (or don't)
+- Tailor your advice to what’s actually on the screen
+- Be precise, visual, and layout-aware
+
+Output a JSON array of exactly 9 recommendations, each with:
+
+- title (string, max 50 characters)
+- description (string, max 200 characters)
+- priority ("high", "medium", or "low")
+
+Example format:
+[
+  {
+    "title": "Add Spacing Between CTA and Footer",
+    "description": "The call-to-action sits too close to the footer. Increase vertical margin to give it more emphasis and breathing room.",
+    "priority": "high"
+  }
+]
+
+Your job is to elevate this page from decent to excellent by applying structural, visual design thinking. Focus on refinement, not reinvention.`;
+    }
+
+    return `You are a strict visual QA tester reviewing website screenshots. Your only task is to detect obvious visual layout issues in the screenshot. You are not performing an accessibility review, usability audit, or subjective design critique.
+
+Viewport: ${viewport}
+
+⚠️ ONLY report structural layout problems that are clearly visible in the image. Examples include:
+
+- Navigation links overlapping the logo or each other
+- Buttons with no padding or margin (text touching edges)
+- Groups of logos/icons overlapping each other (e.g. company logos stacked without spacing)
+- Inline links or elements with no spacing (e.g. "Privacy PolicyTerms of Service" appearing as a single blob)
+- Text or sections that appear cut off, misaligned, or off-center
+- Clearly broken visual stacking or layering
+
+❌ DO NOT report on:
+- Color contrast, font sizes, or typographic opinions
+- Accessibility (alt tags, keyboard focus, etc.)
+- Lack of sticky nav or general UX recommendations
+- "Visual hierarchy" or aesthetic judgments
+
+🧠 Think like a front-end engineer reviewing a rendering bug. If the page looks visually correct, just say:
+
+> No critical layout or visual issues found in this screenshot.
+
+Be concise. Only list visual bugs that are clearly broken in the image.`;
+  }
+
+  /**
+   * Converts an image file to base64 string
+   */
+  private async imageToBase64(imagePath: string): Promise<Result<string, AnalysisError>> {
+    try {
+      this.logger.debugObject("Reading image file", { imagePath });
+      const imageBuffer = await readFile(imagePath);
+      const base64String = imageBuffer.toString("base64");
+      this.logger.debugObject("Image converted to base64", { length: base64String.length });
+      return Ok(base64String);
+    } catch (error) {
+      this.logger.errorObject("Failed to convert image to base64", { error, imagePath });
+      return Err({
+        type: "FILE_SYSTEM_ERROR",
+        code: "READ_ERROR",
+        message: `Failed to read image file: ${error instanceof Error ? error.message : "Unknown error"}`,
+        path: imagePath,
+      } as AnalysisError);
+    }
   }
 
   /**
@@ -1155,58 +1357,5 @@ export class VisionService {
     if (status === 415) return "INVALID_IMAGE";
     if (status && status >= 500) return "SERVER_ERROR";
     return "NETWORK_ERROR";
-  }
-
-  /**
-   * Creates the system prompt for the vision model
-   */
-  private createSystemPrompt(viewport: string): string {
-    return `You are a strict, highly pragmatic web design QA tool focused only on layout and structural rendering issues based on visual screenshots of websites.
-
-Your job is to identify obvious, critical visual or structural bugs at a viewport size of ${viewport}, such as:
-
-- Elements that overlap or overflow unintentionally
-- Buttons or text elements with missing or broken padding/margins
-- Sections that appear misaligned, off-center, or tightly cramped
-- Text or UI elements cut off, misplaced, or overflowing their containers
-- Missing sticky headers or navigation on long scrolling pages
-- Excessive or inconsistent white space that affects structure
-- Elements visually rendered in the wrong position or stacking order
-- Clearly broken layout on a large screen (e.g. ${viewport}) — such as overly narrow content or misused columns
-
-You should **not** comment on:
-- Contrast, font size, or colors unless they break layout
-- Accessibility (focus states, alt tags, keyboard nav)
-- Branding, copywriting, or design opinions
-- Anything that is not visually broken in the screenshot
-
-Start your response with a brief description of the webpage (1-2 sentences) on a line that begins with "PAGE DESCRIPTION: ".
-
-Then identify any layout issues. Only report real, visible layout or spacing breakages. If nothing is clearly wrong, respond with:
-
-> No critical layout issues found in this screenshot.
-
-Be strict, concise, and do not invent issues.`;
-  }
-
-  /**
-   * Converts an image file to base64 string
-   */
-  private async imageToBase64(imagePath: string): Promise<Result<string, AnalysisError>> {
-    try {
-      this.logger.debugObject("Reading image file", { imagePath });
-      const imageBuffer = await readFile(imagePath);
-      const base64String = imageBuffer.toString("base64");
-      this.logger.debugObject("Image converted to base64", { length: base64String.length });
-      return Ok(base64String);
-    } catch (error) {
-      this.logger.errorObject("Failed to convert image to base64", { error, imagePath });
-      return Err({
-        type: "FILE_SYSTEM_ERROR",
-        code: "READ_ERROR",
-        message: `Failed to read image file: ${error instanceof Error ? error.message : "Unknown error"}`,
-        path: imagePath,
-      } as AnalysisError);
-    }
   }
 }

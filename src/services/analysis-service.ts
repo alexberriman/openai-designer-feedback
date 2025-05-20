@@ -73,6 +73,7 @@ export class AnalysisService {
     this.logger.debug("Starting vision analysis");
 
     try {
+      // We only perform the basic analysis in this method
       return await this.visionService.analyzeScreenshot({
         imagePath: screenshotPath,
         viewport: options.viewport,
@@ -127,9 +128,18 @@ export class AnalysisService {
       url,
     };
 
+    // Log additional details about design recommendations if present
+    if (analysis.designRecommendations) {
+      this.logger.infoObject("Design recommendations included in analysis", {
+        recommendationsLength: analysis.designRecommendations.length,
+        preview: analysis.designRecommendations.slice(0, 50) + "...",
+      });
+    }
+
     this.logger.infoObject("Website analysis completed", {
       duration: enrichedResult.analysisTime,
       url,
+      hasDesignRecommendations: !!analysis.designRecommendations,
     });
 
     return enrichedResult;
@@ -167,15 +177,73 @@ export class AnalysisService {
         return Err(analysisResult.val);
       }
 
+      let result = analysisResult.val;
+
+      // If design recommendations are requested, fetch them
+      if (options.includeDesignRecommendations) {
+        this.logger.debug("Requesting design recommendations");
+        const designResult = await this.getDesignRecommendations(screenshot.path, options);
+
+        if (designResult.ok) {
+          // Extract the recommendations string from the design result and add it to the main result
+          if (designResult.val.designRecommendations) {
+            result = {
+              ...result,
+              designRecommendations: designResult.val.designRecommendations,
+            };
+            this.logger.debug("Design recommendations merged with analysis result");
+          }
+        } else {
+          // Log error but continue with the main analysis
+          this.logger.warnObject("Failed to get design recommendations", designResult.val);
+        }
+      }
+
       this.logger.debug("Vision analysis completed successfully");
-      return Ok(
-        this.createEnrichedResult(analysisResult.val, screenshot.path, options.url, startTime)
-      );
+      return Ok(this.createEnrichedResult(result, screenshot.path, options.url, startTime));
     } finally {
       // Clean up temporary screenshot if needed
       if (isTemporary) {
         await this.cleanupTemporaryFile(screenshot.path);
       }
+    }
+  }
+
+  /**
+   * Gets design recommendations for a screenshot
+   */
+  private async getDesignRecommendations(
+    screenshotPath: string,
+    options: AnalysisOptions
+  ): Promise<Result<AnalysisResult, AnalysisError>> {
+    this.logger.debug("Starting design recommendations analysis");
+
+    try {
+      // Call the design recommendations method from vision service
+      const result = await this.visionService.getDesignRecommendations({
+        imagePath: screenshotPath,
+        viewport: options.viewport,
+        apiKey: options.apiKey,
+        isDesignRecommendation: true,
+      });
+
+      // Return the result directly
+      return result;
+    } catch (error) {
+      // Log errors but don't fail the whole analysis
+      this.logger.warnObject("Error in design recommendations service", {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : "No stack trace",
+      });
+
+      // Convert to proper error format
+      return Err({
+        type: "ANALYSIS_ERROR",
+        code: "DESIGN_RECOMMENDATIONS_FAILED",
+        message: `Design recommendations analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+        details: error instanceof Error ? error.stack : undefined,
+      } as AnalysisError);
     }
   }
 

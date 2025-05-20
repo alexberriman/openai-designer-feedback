@@ -38,6 +38,7 @@ program
   .option("--api-key <key>", "Override default OpenAI API key")
   .option("--verbose", "Enable verbose logging")
   .option("-s, --save <path>", "Save output to file")
+  .option("--no-design", "Skip visual design recommendations (enabled by default)")
   .action(async (url: string, options: CliOptions) => {
     // Configure logger with verbose mode if requested
     configureLogger({ verbose: options.verbose });
@@ -113,6 +114,7 @@ async function runAnalysis(
     outputPath: options.output,
     verbose: options.verbose,
     fullPage: options.fullPage !== false,
+    includeDesignRecommendations: options.design !== false, // Enabled by default
   };
 
   const analysisResult = await analysisService.analyzeWebsite(analysisOptions);
