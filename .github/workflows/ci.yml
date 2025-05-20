@@ -21,8 +21,12 @@ jobs:
           node-version: '18.x'
           cache: 'npm'
 
+      # Use clean install with a fix for the Rollup optional dependencies issue
       - name: Install dependencies
-        run: npm ci
+        run: |
+          # Remove package-lock.json to avoid npm bug with optional dependencies
+          rm -f package-lock.json
+          npm install
         
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -39,5 +43,12 @@ jobs:
       - name: Run type checking
         run: npm run typecheck
 
+      # Fix for Vitest/Rollup module issues on Linux runners
       - name: Run tests
-        run: npm run test
+        run: |
+          # Try to help Rollup find the Linux-specific modules
+          export NODE_PATH="$NODE_PATH:$(npm root)"
+          # Ensure native modules are installed
+          npm rebuild rollup
+          # Run tests with specific options for CI
+          npx vitest run --mode ci --environment=node
