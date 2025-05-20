@@ -21,7 +21,10 @@ export class TextFormatter implements OutputFormatter {
   }
 
   private formatHeader(result: AnalysisResult, useColor: boolean): string {
-    const header = [
+    const pageDescription = this.extractPageDescription(result.content);
+
+    // Create base header elements
+    const baseHeader = [
       useColor ? chalk.green("✓ Design Analysis Complete") : "✓ Design Analysis Complete",
       "",
       `URL: ${useColor ? chalk.cyan(result.url || "Unknown") : result.url || "Unknown"}`,
@@ -29,7 +32,30 @@ export class TextFormatter implements OutputFormatter {
       `Timestamp: ${new Date(result.timestamp).toLocaleString()}`,
     ];
 
+    // Create description elements if available
+    const descriptionElements =
+      pageDescription === "No page description provided."
+        ? []
+        : ["", useColor ? chalk.yellow("Page Description:") : "Page Description:", pageDescription];
+
+    // Combine all elements and join
+    const header = [...baseHeader, ...descriptionElements];
     return header.join("\n");
+  }
+
+  private extractPageDescription(content: string): string {
+    // Look for line beginning with PAGE DESCRIPTION:
+    const lines = content.split("\n");
+    const descriptionLine = lines.find((line) =>
+      line.trim().toLowerCase().startsWith("page description:")
+    );
+
+    if (descriptionLine) {
+      return descriptionLine.replace(/^page description:\s*/i, "").trim();
+    }
+
+    // If no dedicated description found, return a fallback
+    return "No page description provided.";
   }
 
   private formatAnalysis(content: string, useColor: boolean): string {
@@ -41,6 +67,11 @@ export class TextFormatter implements OutputFormatter {
     let currentSeverity = "";
 
     for (const line of lines) {
+      // Skip PAGE DESCRIPTION lines as we've already extracted them for the header
+      if (line.trim().toLowerCase().startsWith("page description:")) {
+        continue;
+      }
+
       if (this.isSeverityHeader(line)) {
         if (currentSection.length > 0) {
           sections.push(this.formatSection(currentSeverity, currentSection, useColor));

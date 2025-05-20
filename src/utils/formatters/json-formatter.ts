@@ -8,6 +8,14 @@ import type {
 import type { AnalysisResult } from "../../types/analysis.js";
 
 /**
+ * Type for tracking current issue severity and category
+ */
+interface IssueMeta {
+  severity: "critical" | "major" | "minor";
+  category: string;
+}
+
+/**
  * JSON formatter for structured output
  */
 export class JsonFormatter implements OutputFormatter {
@@ -20,6 +28,7 @@ export class JsonFormatter implements OutputFormatter {
   private parseAnalysis(result: AnalysisResult): StructuredOutput {
     const issues = this.extractIssues(result.content);
     const summary = this.extractSummary(result.content);
+    const pageDescription = this.extractPageDescription(result.content);
 
     return {
       url: result.url || "Unknown",
@@ -28,6 +37,7 @@ export class JsonFormatter implements OutputFormatter {
       model: result.model,
       analysisTime: result.analysisTime,
       screenshotPath: result.screenshotPath,
+      pageDescription,
       summary,
       issues,
       metadata: {
@@ -37,65 +47,118 @@ export class JsonFormatter implements OutputFormatter {
     };
   }
 
+  private extractPageDescription(content: string): string {
+    // Look for line beginning with PAGE DESCRIPTION:
+    const lines = content.split("\n");
+    const descriptionLine = lines.find((line) =>
+      line.trim().toLowerCase().startsWith("page description:")
+    );
+
+    if (descriptionLine) {
+      return descriptionLine.replace(/^page description:\s*/i, "").trim();
+    }
+
+    // If no dedicated description found, return a fallback
+    return "No page description provided.";
+  }
+
+  /**
+   * Update current severity and category based on line content
+   */
+  private updateSeverityAndCategory(line: string, current: IssueMeta): void {
+    const trimmed = line.trim().toLowerCase();
+
+    if (trimmed.includes("critical")) {
+      current.severity = "critical";
+      current.category = this.extractCategory(line);
+    } else if (trimmed.includes("major")) {
+      current.severity = "major";
+      current.category = this.extractCategory(line);
+    } else if (trimmed.includes("minor")) {
+      current.severity = "minor";
+      current.category = this.extractCategory(line);
+    }
+  }
+
+  /**
+   * Process a single line to extract an issue if present
+   */
+  private processIssueLine(
+    line: string,
+    currentSeverity: "critical" | "major" | "minor",
+    currentCategory: string
+  ): StructuredIssue | null {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith("-") || trimmed.startsWith("•")) {
+      const description = trimmed.replace(/^[-•]\s*/, "").trim();
+      if (description) {
+        return {
+          severity: currentSeverity,
+          category: currentCategory,
+          description,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if content contains "no issues" indicators
+   */
+  private containsNoIssuesIndicator(content: string): boolean {
+    const noIssuesIndicators = [
+      "no critical layout issues found",
+      "no issues found",
+      "no layout issues",
+      "no visual issues",
+      "no problems detected",
+    ];
+
+    return noIssuesIndicators.some((indicator) =>
+      content.toLowerCase().includes(indicator.toLowerCase())
+    );
+  }
+
+  /**
+   * Extract issues from the analysis content
+   */
   private extractIssues(content: string): StructuredIssue[] {
     const issues: StructuredIssue[] = [];
     const lines = content.split("\n").filter((line) => line.trim());
 
-    let currentSeverity: "critical" | "major" | "minor" = "major";
-    let currentCategory = "General";
+    // Initialize tracking variables
+    const current: IssueMeta = {
+      severity: "major",
+      category: "General",
+    };
 
+    // Process each line
     for (const line of lines) {
-      const trimmed = line.trim();
-
-      // Check for severity headers
-      if (trimmed.toLowerCase().includes("critical")) {
-        currentSeverity = "critical";
-        currentCategory = this.extractCategory(trimmed);
-      } else if (trimmed.toLowerCase().includes("major")) {
-        currentSeverity = "major";
-        currentCategory = this.extractCategory(trimmed);
-      } else if (trimmed.toLowerCase().includes("minor")) {
-        currentSeverity = "minor";
-        currentCategory = this.extractCategory(trimmed);
+      // Skip PAGE DESCRIPTION lines
+      if (line.trim().toLowerCase().startsWith("page description:")) {
+        continue;
       }
 
-      // Extract bullet points as issues
-      if (trimmed.startsWith("-") || trimmed.startsWith("•")) {
-        const description = trimmed.replace(/^[-•]\s*/, "").trim();
-        if (description) {
-          issues.push({
-            severity: currentSeverity,
-            category: currentCategory,
-            description,
-          });
-        }
+      // Update severity and category based on headers
+      this.updateSeverityAndCategory(line, current);
+
+      // Process issue line
+      const issue = this.processIssueLine(line, current.severity, current.category);
+      if (issue) {
+        issues.push(issue);
       }
     }
 
-    // If no structured issues found, create one from the content but ONLY if it's not indicating no issues
-    if (issues.length === 0 && content.trim()) {
-      const trimmedContent = content.trim();
-
-      // Don't add an issue if the content indicates there are no issues
-      const noIssuesIndicators = [
-        "no critical layout issues found",
-        "no issues found",
-        "no layout issues",
-        "no visual issues",
-        "no problems detected",
-      ];
-
-      const hasNoIssuesIndicator = noIssuesIndicators.some((indicator) =>
-        trimmedContent.toLowerCase().includes(indicator.toLowerCase())
-      );
-
-      if (!hasNoIssuesIndicator) {
-        issues.push({
-          severity: "major",
-          category: "General",
-          description: trimmedContent,
-        });
-      }
+    // If no structured issues found and not a "no issues" response, create a general issue
+    const contentHasText = content.trim().length > 0;
+    if (issues.length === 0 && contentHasText && !this.containsNoIssuesIndicator(content)) {
+      issues.push({
+        severity: "major",
+        category: "General",
+        description: content.trim(),
+      });
     }
 
     return issues;
@@ -120,27 +183,26 @@ export class JsonFormatter implements OutputFormatter {
     return "General";
   }
 
-  private extractSummary(content: string): string {
-    // First, check if the content is a "no issues" response
-    const noIssuesIndicators = [
-      "no critical layout issues found",
-      "no issues found",
-      "no layout issues",
-      "no visual issues",
-      "no problems detected",
-    ];
-
-    const trimmedContent = content.trim();
-    const hasNoIssuesIndicator = noIssuesIndicators.some((indicator) =>
-      trimmedContent.toLowerCase().includes(indicator.toLowerCase())
-    );
-
-    if (hasNoIssuesIndicator) {
-      return trimmedContent;
+  /**
+   * Find a line containing one of the no issues indicators
+   */
+  private findNoIssuesLine(lines: string[], noIssuesIndicators: string[]): string | null {
+    for (const line of lines) {
+      if (
+        noIssuesIndicators.some((indicator) =>
+          line.trim().toLowerCase().includes(indicator.toLowerCase())
+        )
+      ) {
+        return line.trim();
+      }
     }
+    return null;
+  }
 
-    // Look for an overall assessment or summary section
-    const lines = content.split("\n");
+  /**
+   * Find a summary section in the content
+   */
+  private findSummarySection(lines: string[]): string | null {
     const summaryIndex = lines.findIndex(
       (line) =>
         line.toLowerCase().includes("overall") ||
@@ -160,8 +222,49 @@ export class JsonFormatter implements OutputFormatter {
       }
     }
 
+    return null;
+  }
+
+  /**
+   * Extract a summary from the analysis content
+   */
+  private extractSummary(content: string): string {
+    // First, define indicators of no issues
+    const noIssuesIndicators = [
+      "no critical layout issues found",
+      "no issues found",
+      "no layout issues",
+      "no visual issues",
+      "no problems detected",
+    ];
+
+    // Filter out PAGE DESCRIPTION line before processing
+    const filteredLines = content
+      .split("\n")
+      .filter((line) => !line.trim().toLowerCase().startsWith("page description:"));
+
+    const filteredContent = filteredLines.join("\n");
+    const trimmedContent = filteredContent.trim();
+
+    // Check for "no issues" indicators
+    const hasNoIssuesIndicator = noIssuesIndicators.some((indicator) =>
+      trimmedContent.toLowerCase().includes(indicator.toLowerCase())
+    );
+
+    if (hasNoIssuesIndicator) {
+      // Extract the first line containing the no issues message
+      const noIssuesLine = this.findNoIssuesLine(filteredLines, noIssuesIndicators);
+      return noIssuesLine || trimmedContent;
+    }
+
+    // Look for an overall assessment or summary section
+    const summarySection = this.findSummarySection(filteredLines);
+    if (summarySection) {
+      return summarySection;
+    }
+
     // If no summary found, create one from the first non-header line
-    const firstContent = lines.find(
+    const firstContent = filteredLines.find(
       (line) =>
         line.trim() &&
         !this.isSeverityHeader(line) &&

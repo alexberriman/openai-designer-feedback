@@ -174,35 +174,33 @@ The JSON format provides structured data for programmatic use:
 ```json
 {
   "url": "https://example.com",
-  "viewport": {
-    "type": "desktop",
-    "width": 1920,
-    "height": 1080
-  },
+  "viewport": "desktop",
   "timestamp": "2024-01-15T10:30:00.000Z",
-  "analysis": {
-    "criticalIssues": [
-      {
-        "severity": "high",
-        "category": "layout",
-        "description": "Navigation menu overlaps content on mobile devices",
-        "recommendation": "Implement responsive navigation pattern"
-      }
-    ],
-    "accessibility": [
-      {
-        "severity": "medium",
-        "issue": "Missing alt text",
-        "elements": ["hero-image", "product-gallery"]
-      }
-    ],
-    "performance": [
-      {
-        "metric": "image-load-time",
-        "value": "5.2s",
-        "recommendation": "Optimize images and implement lazy loading"
-      }
-    ]
+  "model": "gpt-4.1-2025-04-14",
+  "analysisTime": 1500,
+  "screenshotPath": "./screenshot.png",
+  "pageDescription": "A modern e-commerce website with a clean layout featuring product categories, featured items, and a navigation menu.",
+  "summary": "Several layout issues need to be addressed for optimal user experience.",
+  "issues": [
+    {
+      "severity": "critical",
+      "category": "Layout",
+      "description": "Navigation menu overlaps content on mobile devices"
+    },
+    {
+      "severity": "major",
+      "category": "Responsiveness",
+      "description": "Hero image does not resize properly on smaller screens"
+    },
+    {
+      "severity": "minor",
+      "category": "Content",
+      "description": "Product card spacing is inconsistent"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "cli": "@alexberriman/openai-designer-feedback"
   }
 }
 ```

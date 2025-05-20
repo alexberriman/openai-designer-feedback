@@ -43,6 +43,7 @@ export interface StructuredOutput {
   model: string;
   analysisTime?: number;
   screenshotPath?: string;
+  pageDescription: string;
   summary: string;
   issues: StructuredIssue[];
   metadata: {

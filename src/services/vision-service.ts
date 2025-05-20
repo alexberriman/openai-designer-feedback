@@ -1180,7 +1180,9 @@ You should **not** comment on:
 - Branding, copywriting, or design opinions
 - Anything that is not visually broken in the screenshot
 
-Only report real, visible layout or spacing breakages. If nothing is clearly wrong, respond with:
+Start your response with a brief description of the webpage (1-2 sentences) on a line that begins with "PAGE DESCRIPTION: ".
+
+Then identify any layout issues. Only report real, visible layout or spacing breakages. If nothing is clearly wrong, respond with:
 
 > No critical layout issues found in this screenshot.
 
