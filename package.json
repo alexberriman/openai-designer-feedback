@@ -1,6 +1,6 @@
 {
   "name": "@alexberriman/openai-designer-feedback",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI tool that captures website screenshots using @alexberriman/screenshotter and provides professional web design/UX feedback via OpenAI's gpt-image-1 vision model. Focus on identifying critical issues and design errors.",
   "type": "module",
   "exports": {
